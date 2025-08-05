@@ -35,3 +35,18 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 archived_pages
+
+# Downloaded PapersWithCode data
+data/ya-paperswithcode-database/*.json
+*.json.gz
+data/download_scripts/download_log.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+env/
