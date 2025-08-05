@@ -1,0 +1,124 @@
+{
+  "datasets": [
+    {
+      "id": "1",
+      "name": "ImageNet",
+      "description": "ImageNet is a large-scale visual database designed for use in visual object recognition software research. It contains more than 14 million images with bounding box annotations.",
+      "modality": "Images",
+      "task": "Image Classification",
+      "downloads": 2500000,
+      "papers": 15234,
+      "size": "150GB"
+    },
+    {
+      "id": "2",
+      "name": "COCO",
+      "description": "Common Objects in Context (COCO) is a large-scale object detection, segmentation, and captioning dataset containing 328K images.",
+      "modality": "Images",
+      "task": "Object Detection",
+      "downloads": 1800000,
+      "papers": 8976,
+      "size": "25GB"
+    },
+    {
+      "id": "3",
+      "name": "GLUE",
+      "description": "General Language Understanding Evaluation benchmark is a collection of nine English sentence understanding tasks.",
+      "modality": "Texts",
+      "task": "Language Understanding",
+      "downloads": 890000,
+      "papers": 3456,
+      "size": "500MB"
+    },
+    {
+      "id": "4",
+      "name": "SQuAD",
+      "description": "Stanford Question Answering Dataset is a reading comprehension dataset consisting of questions posed on Wikipedia articles.",
+      "modality": "Texts",
+      "task": "Question Answering",
+      "downloads": 1200000,
+      "papers": 5678,
+      "size": "100MB"
+    },
+    {
+      "id": "5",
+      "name": "LibriSpeech",
+      "description": "LibriSpeech is a corpus of approximately 1000 hours of 16kHz read English speech from audiobooks.",
+      "modality": "Audio",
+      "task": "Speech Recognition",
+      "downloads": 650000,
+      "papers": 2345,
+      "size": "60GB"
+    },
+    {
+      "id": "6",
+      "name": "MNIST",
+      "description": "The MNIST database of handwritten digits has a training set of 60,000 examples and a test set of 10,000 examples.",
+      "modality": "Images",
+      "task": "Image Classification",
+      "downloads": 3500000,
+      "papers": 12890,
+      "size": "15MB"
+    },
+    {
+      "id": "7",
+      "name": "CIFAR-10",
+      "description": "The CIFAR-10 dataset consists of 60000 32x32 colour images in 10 classes, with 6000 images per class.",
+      "modality": "Images",
+      "task": "Image Classification",
+      "downloads": 2100000,
+      "papers": 9876,
+      "size": "170MB"
+    },
+    {
+      "id": "8",
+      "name": "WikiText-103",
+      "description": "The WikiText language modeling dataset is a collection of over 100 million tokens extracted from Wikipedia.",
+      "modality": "Texts",
+      "task": "Language Modelling",
+      "downloads": 780000,
+      "papers": 2789,
+      "size": "500MB"
+    },
+    {
+      "id": "9",
+      "name": "ModelNet40",
+      "description": "ModelNet40 contains 12,311 pre-aligned 3D models from 40 categories for 3D object classification.",
+      "modality": "3D",
+      "task": "3D Object Classification",
+      "downloads": 450000,
+      "papers": 1567,
+      "size": "2GB"
+    },
+    {
+      "id": "10",
+      "name": "Penn Treebank",
+      "description": "The Penn Treebank project annotates naturally-occurring text for linguistic structure.",
+      "modality": "Texts",
+      "task": "Language Modelling",
+      "downloads": 890000,
+      "papers": 4321,
+      "size": "50MB"
+    },
+    {
+      "id": "11",
+      "name": "Kinetics-400",
+      "description": "A large-scale, high-quality dataset of YouTube video clips that include a diverse range of human focused actions.",
+      "modality": "Videos",
+      "task": "Action Recognition",
+      "downloads": 560000,
+      "papers": 1890,
+      "size": "450GB"
+    },
+    {
+      "id": "12",
+      "name": "KITTI",
+      "description": "The KITTI Vision Benchmark Suite for autonomous driving research includes stereo, optical flow, visual odometry, 3D object detection.",
+      "modality": "Images",
+      "task": "Autonomous Driving",
+      "downloads": 780000,
+      "papers": 3456,
+      "size": "300GB"
+    }
+  ]
+}

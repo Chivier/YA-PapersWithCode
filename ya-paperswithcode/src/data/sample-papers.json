@@ -1,0 +1,73 @@
+{
+  "papers": [
+    {
+      "id": "1",
+      "title": "Attention Is All You Need",
+      "authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar", "Jakob Uszkoreit", "Llion Jones", "Aidan N. Gomez", "Lukasz Kaiser", "Illia Polosukhin"],
+      "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.",
+      "date": "2017-06-12",
+      "arxivId": "1706.03762",
+      "codeLinks": [
+        { "platform": "github", "url": "https://github.com/tensorflow/tensor2tensor", "stars": 13200 },
+        { "platform": "github", "url": "https://github.com/jadore801120/attention-is-all-you-need-pytorch", "stars": 8100 }
+      ],
+      "tags": ["transformers", "attention", "nlp"],
+      "trending": true
+    },
+    {
+      "id": "2",
+      "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "authors": ["Jacob Devlin", "Ming-Wei Chang", "Kenton Lee", "Kristina Toutanova"],
+      "abstract": "We introduce a new language representation model called BERT, which stands for Bidirectional Encoder Representations from Transformers. Unlike recent language representation models, BERT is designed to pre-train deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers.",
+      "date": "2018-10-11",
+      "arxivId": "1810.04805",
+      "codeLinks": [
+        { "platform": "github", "url": "https://github.com/google-research/bert", "stars": 35400 },
+        { "platform": "github", "url": "https://github.com/huggingface/transformers", "stars": 98700 }
+      ],
+      "tags": ["bert", "transformers", "nlp", "pre-training"],
+      "trending": true
+    },
+    {
+      "id": "3",
+      "title": "Generative Pre-trained Transformer",
+      "authors": ["Alec Radford", "Karthik Narasimhan", "Tim Salimans", "Ilya Sutskever"],
+      "abstract": "Natural language understanding comprises a wide range of diverse tasks such as textual entailment, question answering, semantic similarity assessment, and document classification. We demonstrate that large gains on these tasks can be realized by generative pre-training of a language model on a diverse corpus of unlabeled text, followed by discriminative fine-tuning on each specific task.",
+      "date": "2018-06-11",
+      "arxivId": "1801.06146",
+      "codeLinks": [
+        { "platform": "github", "url": "https://github.com/openai/finetune-transformer-lm", "stars": 2100 }
+      ],
+      "tags": ["gpt", "transformers", "nlp", "language-models"],
+      "trending": false
+    },
+    {
+      "id": "4",
+      "title": "Deep Residual Learning for Image Recognition",
+      "authors": ["Kaiming He", "Xiangyu Zhang", "Shaoqing Ren", "Jian Sun"],
+      "abstract": "Deeper neural networks are more difficult to train. We present a residual learning framework to ease the training of networks that are substantially deeper than those used previously. We explicitly reformulate the layers as learning residual functions with reference to the layer inputs, instead of learning unreferenced functions.",
+      "date": "2015-12-10",
+      "arxivId": "1512.03385",
+      "codeLinks": [
+        { "platform": "github", "url": "https://github.com/KaimingHe/deep-residual-networks", "stars": 22100 },
+        { "platform": "github", "url": "https://github.com/pytorch/vision", "stars": 14200 }
+      ],
+      "tags": ["resnet", "computer-vision", "cnn"],
+      "trending": false
+    },
+    {
+      "id": "5",
+      "title": "You Only Look Once: Unified, Real-Time Object Detection",
+      "authors": ["Joseph Redmon", "Santosh Divvala", "Ross Girshick", "Ali Farhadi"],
+      "abstract": "We present YOLO, a new approach to object detection. Prior work on object detection repurposes classifiers to perform detection. Instead, we frame object detection as a regression problem to spatially separated bounding boxes and associated class probabilities.",
+      "date": "2015-06-08",
+      "arxivId": "1506.02640",
+      "codeLinks": [
+        { "platform": "github", "url": "https://github.com/pjreddie/darknet", "stars": 24300 },
+        { "platform": "github", "url": "https://github.com/ultralytics/yolov5", "stars": 42100 }
+      ],
+      "tags": ["yolo", "object-detection", "computer-vision"],
+      "trending": true
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "modalities": [
+    { "name": "Texts", "count": "3332", "param": "texts" },
+    { "name": "Images", "count": "3275", "param": "images" },
+    { "name": "Videos", "count": "1024", "param": "videos" },
+    { "name": "Audio", "count": "489", "param": "audio" },
+    { "name": "Medical", "count": "425", "param": "medical" },
+    { "name": "3D", "count": "251", "param": "3d" },
+    { "name": "Graphs", "count": "236", "param": "graphs" },
+    { "name": "Time Series", "count": "224", "param": "time-series" },
+    { "name": "Tabular", "count": "197", "param": "tabular" },
+    { "name": "Geospatial", "count": "92", "param": "geospatial" }
+  ],
+  "tasks": [
+    { "name": "Question Answering", "count": "416", "param": "question-answering" },
+    { "name": "Semantic Segmentation", "count": "348", "param": "semantic-segmentation" },
+    { "name": "Object Detection", "count": "334", "param": "object-detection" },
+    { "name": "Image Classification", "count": "283", "param": "image-classification" },
+    { "name": "Classification", "count": "222", "param": "classification" },
+    { "name": "Language Modelling", "count": "190", "param": "language-modelling" },
+    { "name": "Machine Translation", "count": "178", "param": "machine-translation" },
+    { "name": "Text Classification", "count": "168", "param": "text-classification" },
+    { "name": "Named Entity Recognition", "count": "156", "param": "named-entity-recognition" },
+    { "name": "Image Generation", "count": "145", "param": "image-generation" },
+    { "name": "Speech Recognition", "count": "134", "param": "speech-recognition" },
+    { "name": "Sentiment Analysis", "count": "124", "param": "sentiment-analysis" },
+    { "name": "Time Series Forecasting", "count": "98", "param": "time-series-forecasting" },
+    { "name": "Visual Question Answering", "count": "87", "param": "visual-question-answering" },
+    { "name": "Instance Segmentation", "count": "76", "param": "instance-segmentation" }
+  ],
+  "languages": [
+    { "name": "English", "count": "4129", "param": "english" },
+    { "name": "Chinese", "count": "464", "param": "chinese" },
+    { "name": "Spanish", "count": "215", "param": "spanish" },
+    { "name": "German", "count": "201", "param": "german" },
+    { "name": "French", "count": "196", "param": "french" },
+    { "name": "Japanese", "count": "178", "param": "japanese" },
+    { "name": "Italian", "count": "154", "param": "italian" },
+    { "name": "Korean", "count": "143", "param": "korean" },
+    { "name": "Portuguese", "count": "132", "param": "portuguese" },
+    { "name": "Russian", "count": "129", "param": "russian" },
+    { "name": "Arabic", "count": "124", "param": "arabic" },
+    { "name": "Dutch", "count": "98", "param": "dutch" },
+    { "name": "Turkish", "count": "87", "param": "turkish" },
+    { "name": "Hindi", "count": "76", "param": "hindi" },
+    { "name": "Polish", "count": "65", "param": "polish" }
+  ]
+}

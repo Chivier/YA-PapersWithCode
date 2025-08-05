@@ -1,0 +1,63 @@
+{
+  "categories": [
+    {
+      "id": "general",
+      "name": "General",
+      "description": "Fundamental machine learning methods and techniques",
+      "subcategories": [
+        { "name": "Optimization", "slug": "optimization", "methods": ["SGD", "Adam", "RMSprop", "AdaGrad", "AdamW", "LAMB"] },
+        { "name": "Regularization", "slug": "regularization", "methods": ["Dropout", "L1/L2", "Batch Normalization", "Layer Normalization", "Weight Decay"] },
+        { "name": "Activation Functions", "slug": "activation-functions", "methods": ["ReLU", "Sigmoid", "Tanh", "GELU", "Swish", "LeakyReLU"] },
+        { "name": "Normalization", "slug": "normalization", "methods": ["Batch Norm", "Layer Norm", "Group Norm", "Instance Norm", "Weight Norm"] },
+        { "name": "Loss Functions", "slug": "loss-functions", "methods": ["Cross Entropy", "MSE", "MAE", "Focal Loss", "Contrastive Loss"] }
+      ]
+    },
+    {
+      "id": "computer-vision",
+      "name": "Computer Vision",
+      "description": "Methods for processing and understanding visual data",
+      "subcategories": [
+        { "name": "Convolutional Neural Networks", "slug": "cnn", "methods": ["ResNet", "VGG", "MobileNet", "EfficientNet", "DenseNet"] },
+        { "name": "Object Detection", "slug": "object-detection", "methods": ["YOLO", "R-CNN", "SSD", "RetinaNet", "Faster R-CNN"] },
+        { "name": "Image Segmentation", "slug": "image-segmentation", "methods": ["U-Net", "Mask R-CNN", "DeepLab", "FCN", "SegNet"] },
+        { "name": "Vision Transformers", "slug": "vision-transformers", "methods": ["ViT", "DeiT", "Swin Transformer", "DETR", "BEiT"] },
+        { "name": "Image Generation", "slug": "image-generation", "methods": ["GAN", "VAE", "Diffusion Models", "StyleGAN", "DALL-E"] }
+      ]
+    },
+    {
+      "id": "natural-language-processing",
+      "name": "Natural Language Processing",
+      "description": "Methods for understanding and generating human language",
+      "subcategories": [
+        { "name": "Transformers", "slug": "transformers", "methods": ["BERT", "GPT", "T5", "RoBERTa", "ELECTRA", "XLNet"] },
+        { "name": "Language Models", "slug": "language-models", "methods": ["LSTM", "GRU", "Transformer LM", "GPT-2", "GPT-3", "LLaMA"] },
+        { "name": "Attention Mechanisms", "slug": "attention", "methods": ["Self-Attention", "Cross-Attention", "Multi-Head Attention", "Scaled Dot-Product"] },
+        { "name": "Word Embeddings", "slug": "word-embeddings", "methods": ["Word2Vec", "GloVe", "FastText", "ELMo", "Contextual Embeddings"] },
+        { "name": "Sequence-to-Sequence", "slug": "seq2seq", "methods": ["Encoder-Decoder", "Attention Seq2Seq", "Transformer Seq2Seq", "Copy Mechanism"] }
+      ]
+    },
+    {
+      "id": "reinforcement-learning",
+      "name": "Reinforcement Learning",
+      "description": "Methods for learning through interaction with environments",
+      "subcategories": [
+        { "name": "Policy Gradient Methods", "slug": "policy-gradient", "methods": ["REINFORCE", "PPO", "TRPO", "A3C", "IMPALA"] },
+        { "name": "Q-Learning", "slug": "q-learning", "methods": ["DQN", "Double DQN", "Rainbow", "C51", "IQN"] },
+        { "name": "Actor-Critic", "slug": "actor-critic", "methods": ["A2C", "SAC", "TD3", "DDPG", "MPO"] },
+        { "name": "Model-Based RL", "slug": "model-based", "methods": ["World Models", "MuZero", "Dreamer", "PlaNet", "MBPO"] },
+        { "name": "Multi-Agent RL", "slug": "multi-agent", "methods": ["QMIX", "MADDPG", "CommNet", "MAPPO", "MAAC"] }
+      ]
+    },
+    {
+      "id": "audio",
+      "name": "Audio",
+      "description": "Methods for processing and generating audio signals",
+      "subcategories": [
+        { "name": "Speech Recognition", "slug": "speech-recognition", "methods": ["DeepSpeech", "Wav2Vec", "Whisper", "Conformer", "Jasper"] },
+        { "name": "Speech Synthesis", "slug": "speech-synthesis", "methods": ["WaveNet", "Tacotron", "FastSpeech", "WaveGlow", "HiFi-GAN"] },
+        { "name": "Audio Processing", "slug": "audio-processing", "methods": ["Mel-Spectrogram", "MFCC", "WaveGAN", "SampleRNN", "MelGAN"] },
+        { "name": "Music Generation", "slug": "music-generation", "methods": ["MuseNet", "MusicVAE", "Jukebox", "MIDI-VAE", "MusicTransformer"] }
+      ]
+    }
+  ]
+}
