@@ -14,7 +14,7 @@ A modern rebuild of the PapersWithCode website using React, TypeScript, Vite, an
 ## Directory Structure
 
 ```
-ya-paperswithcode/
+frontend/ya-paperswithcode/
 ├── src/
 │   ├── components/          # Reusable UI components
 │   │   ├── layout/         # Layout components

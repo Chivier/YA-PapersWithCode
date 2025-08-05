@@ -132,7 +132,7 @@ The design uses a blue-based color scheme matching the original PapersWithCode:
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/ya-paperswithcode.git
-cd ya-paperswithcode
+cd frontend/ya-paperswithcode
 
 # Install dependencies
 npm install
