@@ -40,6 +40,8 @@ archived_pages
 data/ya-paperswithcode-database/*.json
 *.json.gz
 data/download_scripts/download_log.json
+data/ya-paperswithcode-database/*.db
+data/ya-paperswithcode-database/*.sqlite
 
 # Python
 __pycache__/
