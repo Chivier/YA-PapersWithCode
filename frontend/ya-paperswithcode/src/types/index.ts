@@ -4,10 +4,10 @@ export interface Paper {
   authors: string[];
   abstract: string;
   date: string;
-  arxivId: string;
-  codeLinks: CodeLink[];
-  tags: string[];
-  trending: boolean;
+  arxivId?: string;
+  codeLinks?: CodeLink[];
+  tags?: string[];
+  trending?: boolean;
 }
 
 export interface CodeLink {
@@ -41,14 +41,29 @@ export interface MethodCategory {
   subcategories: MethodSubcategory[];
 }
 
-export interface Dataset {
+export interface Method {
   id: string;
   name: string;
   description: string;
-  modality: string;
-  task: string;
-  size: string;
-  downloads: number;
-  papers: number;
+  paper_count: number;
+}
+
+export interface Dataset {
+  id: string;
+  name: string;
+  full_name?: string;
+  description: string;
+  homepage?: string;
+  paper_title?: string;
+  paper_url?: string;
+  subtasks?: string[];
+  modalities?: string[];
+  languages?: string[];
+  // UI display fields (for compatibility)
+  modality?: string;
+  task?: string;
+  size?: string;
+  downloads?: number;
+  papers?: number;
   thumbnail?: string;
 }

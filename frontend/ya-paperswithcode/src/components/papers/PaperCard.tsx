@@ -62,7 +62,7 @@ export function PaperCard({ paper, className }: PaperCardProps) {
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2">
-            {paper.tags.map((tag) => (
+            {paper.tags && paper.tags.map((tag) => (
               <Badge key={tag} variant="outline" className="text-xs">
                 {tag}
               </Badge>
@@ -77,7 +77,7 @@ export function PaperCard({ paper, className }: PaperCardProps) {
             </div>
             
             <div className="flex items-center gap-3">
-              {paper.codeLinks.map((link, index) => (
+              {paper.codeLinks && paper.codeLinks.map((link, index) => (
                 <a
                   key={index}
                   href={link.url}

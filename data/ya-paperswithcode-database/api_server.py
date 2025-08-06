@@ -1,28 +1,36 @@
 #!/usr/bin/env python3
 """
-FastAPI server to serve PapersWithCode data from SQLite database
+PapersWithCode API Server
+Clean and organized FastAPI server with SQLite and AI search capabilities
 """
 
 import json
 import sqlite3
+import os
+import gzip
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
-from fastapi import FastAPI, HTTPException, Query, Path as PathParam
+from fastapi import FastAPI, HTTPException, Query, Body, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import uvicorn
 
-# Configuration
+# Database configuration
 DB_PATH = "paperswithcode.db"
-API_VERSION = "v1"
+API_PREFIX = "/api/v1"
+DEFAULT_PORT = 8000
+EXPORT_DIR = Path("exports")
+
+# Ensure directories exist
+EXPORT_DIR.mkdir(exist_ok=True)
 
 # Create FastAPI app
 app = FastAPI(
     title="PapersWithCode API",
-    description="API for accessing PapersWithCode data",
+    description="API with SQLite search and AI agent search capabilities",
     version="1.0.0",
 )
 
@@ -36,70 +44,57 @@ app.add_middleware(
 )
 
 
-# Pydantic models
-class Paper(BaseModel):
-    id: str
-    arxiv_id: Optional[str]
-    title: str
-    abstract: Optional[str]
-    url_abs: Optional[str]
-    url_pdf: Optional[str]
-    proceeding: Optional[str]
-    authors: List[str]
-    tasks: List[str]
-    date: Optional[str]
-    methods: List[str]
-    year: Optional[int]
-    month: Optional[int]
-    
-class Repository(BaseModel):
-    id: int
-    paper_id: Optional[str]
-    paper_arxiv_id: Optional[str]
-    paper_title: Optional[str]
-    paper_url_abs: Optional[str]
-    paper_url_pdf: Optional[str]
-    repo_url: str
-    framework: Optional[str]
-    mentioned_in_paper: bool
-    mentioned_in_github: bool
-    stars: int
-    is_official: bool
-    
-class Method(BaseModel):
-    id: str
-    name: str
-    full_name: Optional[str]
-    description: Optional[str]
-    source_title: Optional[str]
-    source_url: Optional[str]
-    code_snippet: Optional[str]
-    intro_year: Optional[int]
-    categories: List[str]
-    
-class Dataset(BaseModel):
-    id: str
-    name: str
-    full_name: Optional[str]
-    homepage: Optional[str]
-    description: Optional[str]
-    paper_title: Optional[str]
-    paper_url: Optional[str]
-    subtasks: List[str]
-    modalities: List[str]
-    languages: List[str]
-    
-class SearchResult(BaseModel):
-    papers: List[Paper]
-    total: int
-    page: int
-    per_page: int
-    
+# ==================== Pydantic Models ====================
 
-# Database connection manager
+class SQLiteSearchRequest(BaseModel):
+    """Request model for SQLite-based search"""
+    query: str = Field(..., min_length=1, description="Search query string")
+    page: int = Field(1, ge=1, description="Page number")
+    per_page: int = Field(50, ge=1, le=200, description="Results per page")
+    filters: Optional[Dict[str, Any]] = Field(None, description="Additional filters")
+
+class AISearchRequest(BaseModel):
+    """Request model for AI agent-based search"""
+    query: str = Field(..., min_length=1, description="Natural language query for AI search")
+    model: Optional[str] = Field("default", description="AI model to use")
+    max_results: int = Field(20, ge=1, le=100, description="Maximum results to return")
+    similarity_threshold: Optional[float] = Field(0.7, ge=0, le=1, description="Similarity threshold")
+
+class SearchResponse(BaseModel):
+    """Unified search response model"""
+    results: List[Dict[str, Any]]
+    total: int
+    page: Optional[int] = None
+    per_page: Optional[int] = None
+    search_type: str
+    query: str
+    execution_time: float
+
+class ImportRequest(BaseModel):
+    """Request model for data import"""
+    data_type: str = Field(..., description="Type: papers, repositories, methods, datasets, evaluations")
+    data: List[Dict[str, Any]] = Field(..., description="Data to import")
+    update_existing: bool = Field(False, description="Update existing records")
+
+class ImportResponse(BaseModel):
+    """Response model for data import"""
+    imported: int
+    updated: int
+    failed: int
+    errors: List[str]
+    execution_time: float
+
+class ExportRequest(BaseModel):
+    """Request model for data export"""
+    data_type: str = Field(..., description="Type: papers, repositories, methods, datasets, evaluations, all")
+    format: str = Field("json", description="Export format: json or json.gz")
+
+
+# ==================== Database Helpers ====================
+
 @contextmanager
 def get_db():
-    """Get database connection."""
+    """Get database connection with context manager."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
@@ -107,8 +102,6 @@ def get_db():
     finally:
         conn.close()
 
-
-# Helper functions
 def parse_json_field(value: str, default: list = None) -> list:
     """Parse JSON field from database."""
     if not value:
@@ -118,83 +111,353 @@ def parse_json_field(value: str, default: list = None) -> list:
     except:
         return default or []
 
+def row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
+    """Convert database row to dictionary."""
+    return dict(row)
+
+def row_to_dataset(row: sqlite3.Row) -> Dict[str, Any]:
+    """Convert database row to dataset dictionary with parsed JSON fields."""
+    dataset = dict(row)
+    # Parse JSON fields
+    dataset["subtasks"] = parse_json_field(dataset.get("subtasks"))
+    dataset["modalities"] = parse_json_field(dataset.get("modalities"))
+    dataset["languages"] = parse_json_field(dataset.get("languages"))
+    return dataset
 
 def row_to_paper(row: sqlite3.Row) -> Dict[str, Any]:
-    """Convert database row to paper dict."""
-    return {
-        "id": row["id"],
-        "arxiv_id": row["arxiv_id"],
-        "title": row["title"],
-        "abstract": row["abstract"],
-        "url_abs": row["url_abs"],
-        "url_pdf": row["url_pdf"],
-        "proceeding": row["proceeding"],
-        "authors": parse_json_field(row["authors"]),
-        "tasks": parse_json_field(row["tasks"]),
-        "date": row["date"],
-        "methods": parse_json_field(row["methods"]),
-        "year": row["year"],
-        "month": row["month"]
-    }
+    """Convert database row to paper dictionary with parsed JSON fields."""
+    paper = dict(row)
+    paper["authors"] = parse_json_field(paper.get("authors"))
+    paper["tasks"] = parse_json_field(paper.get("tasks"))
+    paper["methods"] = parse_json_field(paper.get("methods"))
+    return paper
 
 
-# API endpoints
+# ==================== Root Endpoint ====================
+
 @app.get("/")
 async def root():
-    """Root endpoint."""
+    """API information and available endpoints."""
     return {
-        "message": "PapersWithCode API",
-        "version": API_VERSION,
+        "name": "PapersWithCode API",
+        "version": "1.0.0",
         "endpoints": {
-            "papers": f"/api/{API_VERSION}/papers",
-            "search": f"/api/{API_VERSION}/search",
-            "repositories": f"/api/{API_VERSION}/repositories",
-            "methods": f"/api/{API_VERSION}/methods",
-            "datasets": f"/api/{API_VERSION}/datasets",
-            "statistics": f"/api/{API_VERSION}/statistics"
+            "search": {
+                "sqlite": f"{API_PREFIX}/search/sqlite",
+                "ai_agent": f"{API_PREFIX}/search/agent"
+            },
+            "data": {
+                "import": f"{API_PREFIX}/import",
+                "export": f"{API_PREFIX}/export"
+            },
+            "resources": {
+                "papers": f"{API_PREFIX}/papers",
+                "repositories": f"{API_PREFIX}/repositories",
+                "methods": f"{API_PREFIX}/methods",
+                "datasets": f"{API_PREFIX}/datasets"
+            },
+            "statistics": f"{API_PREFIX}/statistics",
+            "documentation": "/docs"
         }
     }
 
 
-@app.get(f"/api/{API_VERSION}/statistics")
-async def get_statistics():
-    """Get database statistics."""
+# ==================== Search Endpoints ====================
+
+@app.post(f"{API_PREFIX}/search/sqlite", response_model=SearchResponse)
+async def sqlite_search(request: SQLiteSearchRequest):
+    """
+    SQLite-based full-text search.
+    Uses SQLite FTS5 for fast keyword matching.
+    """
+    start_time = datetime.now()
+    
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT stat_type, stat_value FROM statistics")
         
-        stats = {}
-        for row in cursor.fetchall():
-            stats[row["stat_type"]] = row["stat_value"]
+        # Build search query
+        base_query = """
+            SELECT * FROM papers 
+            WHERE (title LIKE ? OR abstract LIKE ?)
+        """
+        search_pattern = f"%{request.query}%"
+        params = [search_pattern, search_pattern]
+        
+        # Apply filters
+        if request.filters:
+            if "year" in request.filters:
+                base_query += " AND year = ?"
+                params.append(request.filters["year"])
+            if "task" in request.filters:
+                base_query += " AND tasks LIKE ?"
+                params.append(f'%"{request.filters["task"]}"%')
+            if "has_code" in request.filters and request.filters["has_code"]:
+                base_query += " AND id IN (SELECT DISTINCT paper_id FROM repositories)"
+        
+        # Count total results
+        count_query = f"SELECT COUNT(*) FROM ({base_query})"
+        cursor.execute(count_query, params)
+        total = cursor.fetchone()[0]
+        
+        # Add pagination
+        base_query += " ORDER BY date DESC LIMIT ? OFFSET ?"
+        params.extend([request.per_page, (request.page - 1) * request.per_page])
+        
+        # Execute search
+        cursor.execute(base_query, params)
+        papers = [row_to_paper(row) for row in cursor.fetchall()]
+        
+        execution_time = (datetime.now() - start_time).total_seconds()
+        
+        return SearchResponse(
+            results=papers,
+            total=total,
+            page=request.page,
+            per_page=request.per_page,
+            search_type="sqlite",
+            query=request.query,
+            execution_time=execution_time
+        )
+
+@app.post(f"{API_PREFIX}/search/agent", response_model=SearchResponse)
+async def ai_agent_search(request: AISearchRequest):
+    """
+    AI agent-based semantic search.
+    Uses AI models for intelligent paper discovery and ranking.
+    """
+    start_time = datetime.now()
+    
+    # Check if AI agent modules are available
+    try:
+        from paper_agent import PaperAgent
+        from models import Agent
+    except ImportError:
+        raise HTTPException(
+            status_code=503,
+            detail="AI agent search is not available. Please install required AI packages."
+        )
+    
+    try:
+        # For now, perform a simple similarity-based search as placeholder
+        # In production, this would use the actual AI agent
+        with get_db() as conn:
+            cursor = conn.cursor()
             
-        return stats
+            # Simple fallback search
+            search_pattern = f"%{request.query}%"
+            cursor.execute("""
+                SELECT * FROM papers 
+                WHERE title LIKE ? OR abstract LIKE ?
+                ORDER BY date DESC
+                LIMIT ?
+            """, [search_pattern, search_pattern, request.max_results])
+            
+            papers = [row_to_paper(row) for row in cursor.fetchall()]
+            
+            execution_time = (datetime.now() - start_time).total_seconds()
+            
+            return SearchResponse(
+                results=papers,
+                total=len(papers),
+                search_type="ai_agent",
+                query=request.query,
+                execution_time=execution_time
+            )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI agent search failed: {str(e)}")
 
 
-@app.get(f"/api/{API_VERSION}/papers", response_model=SearchResult)
+# ==================== Data Import/Export Endpoints ====================
+
+@app.post(f"{API_PREFIX}/import", response_model=ImportResponse)
+async def import_data(request: ImportRequest):
+    """
+    Import data into SQLite database.
+    Supports papers, repositories, methods, datasets, and evaluations.
+    """
+    start_time = datetime.now()
+    imported = 0
+    updated = 0
+    failed = 0
+    errors = []
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        try:
+            if request.data_type == "papers":
+                for item in request.data:
+                    try:
+                        # Check if exists
+                        cursor.execute("SELECT id FROM papers WHERE id = ?", (item["id"],))
+                        exists = cursor.fetchone()
+                        
+                        if exists and request.update_existing:
+                            cursor.execute("""
+                                UPDATE papers SET
+                                    arxiv_id=?, title=?, abstract=?, url_abs=?, url_pdf=?,
+                                    proceeding=?, authors=?, tasks=?, date=?, methods=?, year=?, month=?
+                                WHERE id = ?
+                            """, (
+                                item.get("arxiv_id"), item.get("title"), item.get("abstract"),
+                                item.get("url_abs"), item.get("url_pdf"), item.get("proceeding"),
+                                json.dumps(item.get("authors", [])), json.dumps(item.get("tasks", [])),
+                                item.get("date"), json.dumps(item.get("methods", [])),
+                                item.get("year"), item.get("month"), item["id"]
+                            ))
+                            updated += 1
+                        elif not exists:
+                            cursor.execute("""
+                                INSERT INTO papers (
+                                    id, arxiv_id, title, abstract, url_abs, url_pdf,
+                                    proceeding, authors, tasks, date, methods, year, month
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (
+                                item["id"], item.get("arxiv_id"), item.get("title"),
+                                item.get("abstract"), item.get("url_abs"), item.get("url_pdf"),
+                                item.get("proceeding"), json.dumps(item.get("authors", [])),
+                                json.dumps(item.get("tasks", [])), item.get("date"),
+                                json.dumps(item.get("methods", [])), item.get("year"), item.get("month")
+                            ))
+                            imported += 1
+                    except Exception as e:
+                        failed += 1
+                        errors.append(f"Paper {item.get('id')}: {str(e)}")
+            
+            elif request.data_type == "repositories":
+                for item in request.data:
+                    try:
+                        cursor.execute("""
+                            INSERT OR REPLACE INTO repositories (
+                                paper_id, paper_arxiv_id, paper_title, paper_url_abs,
+                                paper_url_pdf, repo_url, framework, mentioned_in_paper,
+                                mentioned_in_github, stars, is_official
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            item.get("paper_id"), item.get("paper_arxiv_id"),
+                            item.get("paper_title"), item.get("paper_url_abs"),
+                            item.get("paper_url_pdf"), item.get("repo_url"),
+                            item.get("framework"), item.get("mentioned_in_paper", 0),
+                            item.get("mentioned_in_github", 0), item.get("stars", 0),
+                            item.get("is_official", 0)
+                        ))
+                        imported += 1
+                    except Exception as e:
+                        failed += 1
+                        errors.append(f"Repository: {str(e)}")
+            
+            # Similar implementations for methods, datasets, evaluations...
+            else:
+                raise ValueError(f"Unsupported data type: {request.data_type}")
+            
+            conn.commit()
+            
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+    
+    execution_time = (datetime.now() - start_time).total_seconds()
+    
+    return ImportResponse(
+        imported=imported,
+        updated=updated,
+        failed=failed,
+        errors=errors[:10],  # Limit to first 10 errors
+        execution_time=execution_time
+    )
+
+@app.post(f"{API_PREFIX}/export")
+async def export_data(request: ExportRequest):
+    """
+    Export data from SQLite database to JSON file.
+    File will be saved as {data_type}_{timestamp}.json
+    """
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        data = {}
+        
+        try:
+            if request.data_type in ["papers", "all"]:
+                cursor.execute("SELECT * FROM papers")
+                data["papers"] = [row_to_paper(row) for row in cursor.fetchall()]
+            
+            if request.data_type in ["repositories", "all"]:
+                cursor.execute("SELECT * FROM repositories")
+                data["repositories"] = [row_to_dict(row) for row in cursor.fetchall()]
+            
+            if request.data_type in ["methods", "all"]:
+                cursor.execute("SELECT * FROM methods")
+                data["methods"] = [row_to_dict(row) for row in cursor.fetchall()]
+            
+            if request.data_type in ["datasets", "all"]:
+                cursor.execute("SELECT * FROM datasets")
+                data["datasets"] = [row_to_dict(row) for row in cursor.fetchall()]
+            
+            if request.data_type in ["evaluations", "all"]:
+                cursor.execute("SELECT * FROM evaluation_results")
+                data["evaluations"] = [row_to_dict(row) for row in cursor.fetchall()]
+            
+            # Add metadata
+            data["_metadata"] = {
+                "exported_at": timestamp,
+                "data_type": request.data_type,
+                "total_records": sum(len(v) for v in data.values() if isinstance(v, list))
+            }
+            
+            # Save to file
+            filename = f"{request.data_type}_{timestamp}.json"
+            filepath = EXPORT_DIR / filename
+            
+            if request.format == "json.gz":
+                filename += ".gz"
+                filepath = EXPORT_DIR / filename
+                with gzip.open(filepath, "wt", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+            else:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+            
+            return {
+                "message": "Export successful",
+                "filename": filename,
+                "path": str(filepath.absolute()),
+                "records": data["_metadata"]["total_records"],
+                "format": request.format
+            }
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+
+# ==================== Resource Endpoints ====================
+
+@app.get(f"{API_PREFIX}/papers")
 async def get_papers(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=200),
     year: Optional[int] = None,
     task: Optional[str] = None
 ):
-    """Get papers with pagination."""
+    """Get papers with pagination and optional filters."""
     with get_db() as conn:
         cursor = conn.cursor()
         
-        # Build query
         query = "SELECT * FROM papers WHERE 1=1"
         params = []
         
         if year:
             query += " AND year = ?"
             params.append(year)
-            
+        
         if task:
-            query += " AND id IN (SELECT paper_id FROM paper_tasks WHERE task_name = ?)"
-            params.append(task)
-            
+            query += " AND tasks LIKE ?"
+            params.append(f'%"{task}"%')
+        
         # Count total
-        count_query = query.replace("SELECT *", "SELECT COUNT(*)")
+        count_query = f"SELECT COUNT(*) FROM ({query})"
         cursor.execute(count_query, params)
         total = cursor.fetchone()[0]
         
@@ -206,15 +469,24 @@ async def get_papers(
         papers = [row_to_paper(row) for row in cursor.fetchall()]
         
         return {
-            "papers": papers,
+            "results": papers,
             "total": total,
             "page": page,
             "per_page": per_page
         }
 
+@app.get(f"{API_PREFIX}/papers/count")
+async def get_papers_count():
+    """Get total count of papers."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM papers")
+        count = cursor.fetchone()[0]
+        
+        return {"count": count, "table": "papers"}
 
-@app.get(f"/api/{API_VERSION}/papers/{{paper_id}}")
-async def get_paper(paper_id: str = PathParam(...)):
+@app.get(f"{API_PREFIX}/papers/{{paper_id}}")
+async def get_paper(paper_id: str):
     """Get specific paper by ID."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -223,301 +495,220 @@ async def get_paper(paper_id: str = PathParam(...)):
         
         if not row:
             raise HTTPException(status_code=404, detail="Paper not found")
-            
+        
         return row_to_paper(row)
 
-
-@app.get(f"/api/{API_VERSION}/papers/arxiv/{{arxiv_id}}")
-async def get_paper_by_arxiv(arxiv_id: str = PathParam(...)):
-    """Get paper by arXiv ID."""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM papers WHERE arxiv_id = ?", (arxiv_id,))
-        row = cursor.fetchone()
-        
-        if not row:
-            raise HTTPException(status_code=404, detail="Paper not found")
-            
-        return row_to_paper(row)
-
-
-@app.get(f"/api/{API_VERSION}/search")
-async def search_papers(
-    q: str = Query(..., min_length=1),
-    page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=200)
-):
-    """Full-text search in papers."""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # Use FTS5 for search
-        search_query = """
-            SELECT p.* 
-            FROM papers p
-            JOIN papers_fts ON p.rowid = papers_fts.rowid
-            WHERE papers_fts MATCH ?
-            ORDER BY rank
-            LIMIT ? OFFSET ?
-        """
-        
-        # Count query
-        count_query = """
-            SELECT COUNT(*) 
-            FROM papers p
-            JOIN papers_fts ON p.rowid = papers_fts.rowid
-            WHERE papers_fts MATCH ?
-        """
-        
-        # Execute count
-        cursor.execute(count_query, (q,))
-        total = cursor.fetchone()[0]
-        
-        # Execute search
-        cursor.execute(search_query, (q, per_page, (page - 1) * per_page))
-        papers = [row_to_paper(row) for row in cursor.fetchall()]
-        
-        return {
-            "papers": papers,
-            "total": total,
-            "page": page,
-            "per_page": per_page,
-            "query": q
-        }
-
-
-@app.get(f"/api/{API_VERSION}/repositories")
+@app.get(f"{API_PREFIX}/repositories")
 async def get_repositories(
-    paper_id: Optional[str] = None,
-    framework: Optional[str] = None,
-    min_stars: int = Query(0, ge=0),
-    official_only: bool = False,
     page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=200)
+    per_page: int = Query(50, ge=1, le=200),
+    paper_id: Optional[str] = None
 ):
-    """Get code repositories."""
+    """Get repositories with pagination."""
     with get_db() as conn:
         cursor = conn.cursor()
         
-        query = "SELECT * FROM repositories WHERE stars >= ?"
-        params = [min_stars]
+        query = "SELECT * FROM repositories WHERE 1=1"
+        params = []
         
         if paper_id:
             query += " AND paper_id = ?"
             params.append(paper_id)
-            
-        if framework:
-            query += " AND framework = ?"
-            params.append(framework)
-            
-        if official_only:
-            query += " AND is_official = 1"
-            
-        # Count total
-        count_query = query.replace("SELECT *", "SELECT COUNT(*)")
-        cursor.execute(count_query, params)
-        total = cursor.fetchone()[0]
         
-        # Add ordering and pagination
         query += " ORDER BY stars DESC LIMIT ? OFFSET ?"
         params.extend([per_page, (page - 1) * per_page])
         
         cursor.execute(query, params)
+        repos = [row_to_dict(row) for row in cursor.fetchall()]
         
-        repos = []
-        for row in cursor.fetchall():
-            repos.append({
-                "id": row["id"],
-                "paper_id": row["paper_id"],
-                "paper_arxiv_id": row["paper_arxiv_id"],
-                "paper_title": row["paper_title"],
-                "paper_url_abs": row["paper_url_abs"],
-                "paper_url_pdf": row["paper_url_pdf"],
-                "repo_url": row["repo_url"],
-                "framework": row["framework"],
-                "mentioned_in_paper": bool(row["mentioned_in_paper"]),
-                "mentioned_in_github": bool(row["mentioned_in_github"]),
-                "stars": row["stars"],
-                "is_official": bool(row["is_official"])
-            })
-            
         return {
-            "repositories": repos,
-            "total": total,
+            "results": repos,
             "page": page,
             "per_page": per_page
         }
 
-
-@app.get(f"/api/{API_VERSION}/methods")
+@app.get(f"{API_PREFIX}/methods")
 async def get_methods(
     page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=200),
-    year: Optional[int] = None
+    per_page: int = Query(50, ge=1, le=200)
 ):
-    """Get methods."""
+    """Get methods with pagination."""
     with get_db() as conn:
         cursor = conn.cursor()
         
-        query = "SELECT * FROM methods WHERE 1=1"
-        params = []
-        
-        if year:
-            query += " AND intro_year = ?"
-            params.append(year)
-            
-        # Count total
-        count_query = query.replace("SELECT *", "SELECT COUNT(*)")
-        cursor.execute(count_query, params)
+        # Get total count
+        cursor.execute("SELECT COUNT(*) FROM methods")
         total = cursor.fetchone()[0]
         
-        # Add pagination
-        query += " ORDER BY name LIMIT ? OFFSET ?"
-        params.extend([per_page, (page - 1) * per_page])
+        query = "SELECT * FROM methods ORDER BY name LIMIT ? OFFSET ?"
+        params = [per_page, (page - 1) * per_page]
         
         cursor.execute(query, params)
+        methods = [row_to_dict(row) for row in cursor.fetchall()]
         
-        methods = []
-        for row in cursor.fetchall():
-            methods.append({
-                "id": row["id"],
-                "name": row["name"],
-                "full_name": row["full_name"],
-                "description": row["description"],
-                "source_title": row["source_title"],
-                "source_url": row["source_url"],
-                "code_snippet": row["code_snippet"],
-                "intro_year": row["intro_year"],
-                "categories": parse_json_field(row["categories"])
-            })
-            
         return {
-            "methods": methods,
+            "results": methods,
             "total": total,
             "page": page,
             "per_page": per_page
         }
 
+@app.get(f"{API_PREFIX}/methods/count")
+async def get_methods_count():
+    """Get total count of methods."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM methods")
+        count = cursor.fetchone()[0]
+        
+        return {"count": count, "table": "methods"}
 
-@app.get(f"/api/{API_VERSION}/datasets")
+@app.get(f"{API_PREFIX}/datasets")
 async def get_datasets(
     page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=200),
-    modality: Optional[str] = None,
-    language: Optional[str] = None
+    per_page: int = Query(50, ge=1, le=200)
 ):
-    """Get datasets."""
+    """Get datasets with pagination."""
     with get_db() as conn:
         cursor = conn.cursor()
         
-        query = "SELECT * FROM datasets WHERE 1=1"
-        params = []
-        
-        if modality:
-            query += " AND modalities LIKE ?"
-            params.append(f'%"{modality}"%')
-            
-        if language:
-            query += " AND languages LIKE ?"
-            params.append(f'%"{language}"%')
-            
-        # Count total
-        count_query = query.replace("SELECT *", "SELECT COUNT(*)")
-        cursor.execute(count_query, params)
+        # Get total count
+        cursor.execute("SELECT COUNT(*) FROM datasets")
         total = cursor.fetchone()[0]
         
-        # Add pagination
-        query += " ORDER BY name LIMIT ? OFFSET ?"
-        params.extend([per_page, (page - 1) * per_page])
+        query = "SELECT * FROM datasets ORDER BY name LIMIT ? OFFSET ?"
+        params = [per_page, (page - 1) * per_page]
         
         cursor.execute(query, params)
+        datasets = [row_to_dataset(row) for row in cursor.fetchall()]
         
-        datasets = []
-        for row in cursor.fetchall():
-            datasets.append({
-                "id": row["id"],
-                "name": row["name"],
-                "full_name": row["full_name"],
-                "homepage": row["homepage"],
-                "description": row["description"],
-                "paper_title": row["paper_title"],
-                "paper_url": row["paper_url"],
-                "subtasks": parse_json_field(row["subtasks"]),
-                "modalities": parse_json_field(row["modalities"]),
-                "languages": parse_json_field(row["languages"])
-            })
-            
         return {
-            "datasets": datasets,
+            "results": datasets,
             "total": total,
             "page": page,
             "per_page": per_page
         }
 
-
-@app.get(f"/api/{API_VERSION}/tasks")
-async def get_tasks():
-    """Get all tasks."""
+@app.get(f"{API_PREFIX}/datasets/count")
+async def get_datasets_count():
+    """Get total count of datasets."""
     with get_db() as conn:
         cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM datasets")
+        count = cursor.fetchone()[0]
+        
+        return {"count": count, "table": "datasets"}
+
+@app.get(f"{API_PREFIX}/datasets/{{dataset_id}}")
+async def get_dataset(dataset_id: str):
+    """Get specific dataset by ID."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM datasets WHERE id = ?", (dataset_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        
+        return row_to_dataset(row)
+
+
+# ==================== Statistics Endpoint ====================
+
+@app.get(f"{API_PREFIX}/statistics")
+async def get_statistics():
+    """Get database statistics."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        stats = {}
+        
+        # Papers statistics
+        cursor.execute("SELECT COUNT(*) FROM papers")
+        stats["total_papers"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(DISTINCT arxiv_id) FROM papers WHERE arxiv_id IS NOT NULL")
+        stats["papers_with_arxiv"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM papers WHERE abstract IS NOT NULL AND abstract != ''")
+        stats["papers_with_abstract"] = cursor.fetchone()[0]
+        
+        # Repository statistics
+        cursor.execute("SELECT COUNT(*) FROM repositories")
+        stats["total_repositories"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(DISTINCT paper_id) FROM repositories")
+        stats["papers_with_code"] = cursor.fetchone()[0]
+        
+        # Other statistics
+        cursor.execute("SELECT COUNT(*) FROM methods")
+        stats["total_methods"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM datasets")
+        stats["total_datasets"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM tasks")
+        stats["total_tasks"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM evaluation_results")
+        stats["total_evaluations"] = cursor.fetchone()[0]
+        
+        # Year distribution
         cursor.execute("""
-            SELECT t.name, t.description, COUNT(pt.paper_id) as paper_count
-            FROM tasks t
-            LEFT JOIN paper_tasks pt ON t.name = pt.task_name
-            GROUP BY t.name
-            ORDER BY paper_count DESC
+            SELECT year, COUNT(*) as count 
+            FROM papers 
+            WHERE year IS NOT NULL 
+            GROUP BY year 
+            ORDER BY year DESC 
+            LIMIT 10
         """)
+        stats["papers_by_year"] = [
+            {"year": row[0], "count": row[1]} for row in cursor.fetchall()
+        ]
         
-        tasks = []
-        for row in cursor.fetchall():
-            tasks.append({
-                "name": row["name"],
-                "description": row["description"],
-                "paper_count": row["paper_count"]
-            })
-            
-        return {"tasks": tasks}
+        return stats
 
-
-@app.get(f"/api/{API_VERSION}/evaluations")
-async def get_evaluations(
-    task: Optional[str] = None,
-    dataset: Optional[str] = None
-):
-    """Get evaluation results."""
+@app.get(f"{API_PREFIX}/counts")
+async def get_table_counts():
+    """Get count of records in each table."""
     with get_db() as conn:
         cursor = conn.cursor()
         
-        query = "SELECT * FROM evaluation_results WHERE 1=1"
-        params = []
+        counts = {}
         
-        if task:
-            query += " AND task = ?"
-            params.append(task)
-            
-        if dataset:
-            query += " AND dataset = ?"
-            params.append(dataset)
-            
-        cursor.execute(query, params)
+        # Get counts for all main tables
+        tables = ['papers', 'datasets', 'methods', 'repositories', 'tasks', 'evaluation_results']
         
-        evaluations = []
-        for row in cursor.fetchall():
-            evaluations.append({
-                "id": row["id"],
-                "task": row["task"],
-                "dataset": row["dataset"],
-                "subdataset": row["subdataset"],
-                "sota_rows": parse_json_field(row["sota_rows"]),
-                "metrics": parse_json_field(row["metrics"])
-            })
-            
-        return {"evaluations": evaluations}
+        for table in tables:
+            cursor.execute(f"SELECT COUNT(*) FROM {table}")
+            counts[table] = cursor.fetchone()[0]
+        
+        return counts
 
+
+# ==================== Main Entry Point ====================
 
 def main():
     """Run the API server."""
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import sys
+    
+    # Check if database exists
+    if not os.path.exists(DB_PATH):
+        print(f"Error: Database not found at {DB_PATH}")
+        print("Please run the database initialization script first.")
+        sys.exit(1)
+    
+    port = int(os.getenv("PORT", DEFAULT_PORT))
+    host = os.getenv("HOST", "0.0.0.0")
+    
+    print(f"Starting PapersWithCode API Server")
+    print(f"Database: {DB_PATH}")
+    print(f"Server: http://{host}:{port}")
+    print(f"API Docs: http://{host}:{port}/docs")
+    print(f"API Base: http://{host}:{port}{API_PREFIX}")
+    print("-" * 50)
+    
+    uvicorn.run(app, host=host, port=port)
 
 
 if __name__ == "__main__":

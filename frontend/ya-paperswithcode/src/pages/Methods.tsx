@@ -1,18 +1,33 @@
 import { useState, useEffect } from 'react';
 import { MethodCard } from '../components/methods/MethodCard';
 import type { MethodCategory } from '../types';
-import methodCategories from '../data/method-categories.json';
+import { getMethods } from '../lib/api';
 
 export function Methods() {
   const [categories, setCategories] = useState<MethodCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setCategories(methodCategories.categories as MethodCategory[]);
-      setLoading(false);
-    }, 300);
+    const fetchMethods = async () => {
+      setLoading(true);
+      try {
+        const data = await getMethods();
+        // The API returns a flat list of methods, but the UI expects categories.
+        // For now, we'll create a single category with all methods.
+        const allMethodsCategory: MethodCategory = {
+          id: 'all-methods',
+          name: 'All Methods',
+          description: 'A comprehensive list of all available methods.',
+          subcategories: data.results.map((method, index) => ({ name: method.name, slug: `${method.id}-${index}`, methods: [] })),
+        };
+        setCategories([allMethodsCategory]);
+      } catch (error) {
+        console.error('Failed to fetch methods:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMethods();
   }, []);
 
   return (

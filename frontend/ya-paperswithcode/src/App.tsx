@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { Home } from './pages/Home';
 import { Datasets } from './pages/Datasets';
+import { DatasetDetail } from './pages/DatasetDetail';
 import { Methods } from './pages/Methods';
 import { StateOfTheArt } from './pages/StateOfTheArt';
 
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="datasets" element={<Datasets />} />
+          <Route path="datasets/:id" element={<DatasetDetail />} />
           <Route path="methods" element={<Methods />} />
           <Route path="sota" element={<StateOfTheArt />} />
         </Route>

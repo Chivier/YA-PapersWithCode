@@ -1,22 +1,39 @@
 import { useState, useEffect } from 'react';
 import { PaperCard } from '../components/papers/PaperCard';
 import type { Paper } from '../types';
-import samplePapers from '../data/sample-papers.json';
+import { getPapers } from '../lib/api';
 
 export function Home() {
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  const fetchPapers = async (pageNum: number) => {
+    setLoading(true);
+    try {
+      const data = await getPapers(pageNum, 10);
+      setPapers(prev => pageNum === 1 ? data.results : [...prev, ...data.results]);
+      setHasMore(data.results.length > 0 && data.total > pageNum * 10);
+    } catch (error) {
+      console.error('Failed to fetch papers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Simulate loading papers
-    setTimeout(() => {
-      setPapers(samplePapers.papers as Paper[]);
-      setLoading(false);
-    }, 500);
+    fetchPapers(1);
   }, []);
 
+  const loadMorePapers = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPapers(nextPage);
+  };
+
   const trendingPapers = papers.filter(p => p.trending);
-  const latestPapers = papers.filter(p => !p.trending);
+  const latestPapers = papers;
 
   return (
     <div className="container py-8">
