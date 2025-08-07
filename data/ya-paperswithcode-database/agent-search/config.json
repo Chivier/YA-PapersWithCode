@@ -1,0 +1,49 @@
+{
+  "agents": {
+    "paper_search": {
+      "default": {
+        "data_source": "api",
+        "search_strategy": "basic",
+        "expand_layers": 0,
+        "search_queries": 1,
+        "search_papers": 10,
+        "expand_papers": 0,
+        "threads_num": 1
+      },
+      "advanced": {
+        "data_source": "json",
+        "search_strategy": "advanced",
+        "expand_layers": 2,
+        "search_queries": 5,
+        "search_papers": 10,
+        "expand_papers": 20,
+        "threads_num": 20
+      }
+    },
+    "dataset_search": {
+      "default": {
+        "data_source": "api",
+        "search_strategy": "basic",
+        "enable_filters": true,
+        "recommend_similar": false
+      },
+      "advanced": {
+        "data_source": "json",
+        "search_strategy": "advanced",
+        "enable_filters": true,
+        "recommend_similar": true
+      }
+    }
+  },
+  "api_settings": {
+    "database_path": "paperswithcode.db",
+    "json_directory": ".",
+    "cache_enabled": true,
+    "cache_ttl": 3600
+  },
+  "model_settings": {
+    "crawler_model": "checkpoints/pasa-7b-crawler",
+    "selector_model": "checkpoints/pasa-7b-selector",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+  }
+}

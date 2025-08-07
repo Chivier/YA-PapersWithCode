@@ -191,6 +191,101 @@ async def health():
 
 # ==================== Search Endpoints ====================
 
+@app.post(f"{API_PREFIX}/search/unified")
+async def unified_search(request: Dict[str, Any]):
+    """
+    Unified search endpoint using the modular agent system.
+    Automatically detects search type and selects appropriate agent.
+    
+    Request body:
+    {
+        "query": "search query",
+        "type": "auto|papers|datasets|methods",  # optional, default: auto
+        "agent": "auto|basic|advanced",  # optional, default: auto
+        "options": {
+            "expand": bool,  # whether to expand results
+            "limit": int,  # max results
+            "filters": dict  # additional filters
+        }
+    }
+    """
+    try:
+        # Import the modular agent search system
+        import sys
+        sys.path.append(str(Path(__file__).parent))
+        from agent_search.manager import SearchManager
+        
+        # Extract parameters
+        query = request.get('query', '')
+        search_type = request.get('type', 'auto')
+        agent_type = request.get('agent', 'auto')
+        options = request.get('options', {})
+        
+        # Initialize search manager
+        manager = SearchManager()
+        
+        # Perform unified search
+        result = await manager.search(
+            query=query,
+            search_type=search_type,
+            agent_type=agent_type,
+            **options
+        )
+        
+        return result
+    
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Unified search not available. Agent search module not installed."
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unified search failed: {str(e)}")
+
+@app.post(f"{API_PREFIX}/search/multi")
+async def multi_search(request: Dict[str, Any]):
+    """
+    Search across multiple data types simultaneously.
+    
+    Request body:
+    {
+        "query": "search query",
+        "types": ["papers", "datasets", "methods"],  # optional, default: all
+        "options": {
+            "limit": int,  # max results per type
+            "filters": dict  # additional filters
+        }
+    }
+    """
+    try:
+        # Import the modular agent search system
+        import sys
+        sys.path.append(str(Path(__file__).parent))
+        from agent_search.manager import SearchManager
+        
+        # Extract parameters
+        query = request.get('query', '')
+        search_types = request.get('types', None)
+        
+        # Initialize search manager
+        manager = SearchManager()
+        
+        # Perform multi-type search
+        result = await manager.multi_search(
+            query=query,
+            search_types=search_types
+        )
+        
+        return result
+    
+    except ImportError as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Multi-search not available. Agent search module not installed."
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Multi-search failed: {str(e)}")
+
 @app.post(f"{API_PREFIX}/papers/search", response_model=SearchResponse)
 async def search_papers(request: SQLiteSearchRequest):
     """
@@ -312,41 +407,70 @@ async def search_datasets(request: SQLiteSearchRequest):
 async def ai_agent_search_papers(request: AISearchRequest):
     """
     AI agent-based semantic search for papers.
-    Uses AI models for intelligent paper discovery and ranking.
+    Uses modular agent system for intelligent paper discovery and ranking.
     """
     start_time = datetime.now()
     
-    # Check if AI agent modules are available
     try:
-        from paper_agent import PaperAgent
-        from models import Agent
-    except ImportError:
-        # Fallback to simple search if AI modules not available
-        with get_db() as conn:
-            cursor = conn.cursor()
-            
-            search_pattern = f"%{request.query}%"
-            cursor.execute("""
-                SELECT * FROM papers 
-                WHERE title LIKE ? OR abstract LIKE ?
-                ORDER BY date DESC
-                LIMIT ?
-            """, [search_pattern, search_pattern, request.max_results])
-            
-            papers = [row_to_paper(row) for row in cursor.fetchall()]
-            
-            execution_time = (datetime.now() - start_time).total_seconds()
-            
-            return SearchResponse(
-                results=papers,
-                total=len(papers),
-                search_type="ai_agent_papers",
-                query=request.query,
-                execution_time=execution_time
-            )
+        # Import the modular agent search system
+        import sys
+        sys.path.append(str(Path(__file__).parent))
+        from agent_search.manager import SearchManager
+        
+        # Initialize search manager
+        manager = SearchManager()
+        
+        # Prepare search parameters
+        search_params = {
+            'limit': request.max_results,
+            'expand': request.filters.get('expand', False) if request.filters else False,
+            'filters': request.filters or {}
+        }
+        
+        # Determine agent type based on request
+        agent_type = 'advanced' if request.filters and request.filters.get('use_advanced', False) else 'basic'
+        
+        # Perform search using the modular system
+        result = await manager.search(
+            query=request.query,
+            search_type='papers',
+            agent_type=agent_type,
+            **search_params
+        )
+        
+        # TODO:AGENT_SEARCH - Once the advanced search is implemented, remove this fallback
+        # For now, if no results from agent, fallback to simple search
+        if not result.get('results'):
+            with get_db() as conn:
+                cursor = conn.cursor()
+                
+                search_pattern = f"%{request.query}%"
+                cursor.execute("""
+                    SELECT * FROM papers 
+                    WHERE title LIKE ? OR abstract LIKE ?
+                    ORDER BY date DESC
+                    LIMIT ?
+                """, [search_pattern, search_pattern, request.max_results])
+                
+                papers = [row_to_paper(row) for row in cursor.fetchall()]
+                result = {
+                    'results': papers,
+                    'total': len(papers),
+                    'query': request.query,
+                    'search_type': 'fallback',
+                    'execution_time': (datetime.now() - start_time).total_seconds()
+                }
+        
+        return SearchResponse(
+            results=result.get('results', []),
+            total=result.get('total', 0),
+            search_type="ai_agent_papers",
+            query=request.query,
+            execution_time=result.get('execution_time', (datetime.now() - start_time).total_seconds())
+        )
     
-    try:
-        # Use AI agent for semantic search (when available)
+    except ImportError as e:
+        # If agent search module not available, use fallback
         with get_db() as conn:
             cursor = conn.cursor()
             
@@ -365,7 +489,7 @@ async def ai_agent_search_papers(request: AISearchRequest):
             return SearchResponse(
                 results=papers,
                 total=len(papers),
-                search_type="ai_agent_papers",
+                search_type="ai_agent_papers_fallback",
                 query=request.query,
                 execution_time=execution_time
             )
@@ -377,15 +501,79 @@ async def ai_agent_search_papers(request: AISearchRequest):
 async def ai_agent_search_datasets(request: AISearchRequest):
     """
     AI agent-based semantic search for datasets.
-    Uses natural language to find relevant datasets.
+    Uses modular agent system for natural language dataset discovery.
     """
     start_time = datetime.now()
     
     try:
+        # Import the modular agent search system
+        import sys
+        sys.path.append(str(Path(__file__).parent))
+        from agent_search.manager import SearchManager
+        
+        # Initialize search manager
+        manager = SearchManager()
+        
+        # Prepare search parameters
+        search_params = {
+            'limit': request.max_results,
+            'expand': request.filters.get('expand', False) if request.filters else False,
+            'filters': request.filters or {}
+        }
+        
+        # Determine agent type based on request
+        agent_type = 'advanced' if request.filters and request.filters.get('use_advanced', False) else 'basic'
+        
+        # Perform search using the modular system
+        result = await manager.search(
+            query=request.query,
+            search_type='datasets',
+            agent_type=agent_type,
+            **search_params
+        )
+        
+        # TODO:AGENT_SEARCH - Once the advanced search is implemented, remove this fallback
+        # For now, if no results from agent, fallback to simple search
+        if not result.get('results'):
+            with get_db() as conn:
+                cursor = conn.cursor()
+                
+                search_pattern = f"%{request.query}%"
+                cursor.execute("""
+                    SELECT * FROM datasets 
+                    WHERE name LIKE ? OR description LIKE ?
+                    ORDER BY 
+                        CASE 
+                            WHEN substr(name, 1, 1) GLOB '[0-9]' THEN 1
+                            WHEN substr(name, 1, 1) GLOB '[A-Za-z]' THEN 2
+                            ELSE 3
+                        END,
+                        name COLLATE NOCASE ASC
+                    LIMIT ?
+                """, [search_pattern, search_pattern, request.max_results])
+                
+                datasets = [row_to_dataset(row) for row in cursor.fetchall()]
+                result = {
+                    'results': datasets,
+                    'total': len(datasets),
+                    'query': request.query,
+                    'search_type': 'fallback',
+                    'execution_time': (datetime.now() - start_time).total_seconds()
+                }
+        
+        return SearchResponse(
+            results=result.get('results', []),
+            total=result.get('total', 0),
+            search_type="ai_agent_datasets",
+            query=request.query,
+            execution_time=result.get('execution_time', (datetime.now() - start_time).total_seconds())
+        )
+    
+    except ImportError as e:
+        # If agent search module not available, use fallback
         with get_db() as conn:
             cursor = conn.cursor()
             
-            # Natural language search for datasets
             search_pattern = f"%{request.query}%"
             cursor.execute("""
                 SELECT * FROM datasets 
@@ -407,7 +595,7 @@ async def ai_agent_search_datasets(request: AISearchRequest):
             return SearchResponse(
                 results=datasets,
                 total=len(datasets),
-                search_type="ai_agent_datasets",
+                search_type="ai_agent_datasets_fallback",
                 query=request.query,
                 execution_time=execution_time
             )
