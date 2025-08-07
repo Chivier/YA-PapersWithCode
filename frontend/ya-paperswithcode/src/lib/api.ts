@@ -50,7 +50,7 @@ export const getMethods = async (): Promise<{ results: Method[], total: number }
 };
 
 export const searchPapers = async (query: string, page = 1, per_page = 10) => {
-  const response = await apiClient.post('/search/sqlite', {
+  const response = await apiClient.post('/papers/search', {
     query,
     page,
     per_page,
@@ -58,8 +58,22 @@ export const searchPapers = async (query: string, page = 1, per_page = 10) => {
   return response.data;
 };
 
-export const searchWithAgent = async (query: string) => {
-  const response = await apiClient.post('/search/agent', { query });
+export const searchPapersWithAgent = async (query: string) => {
+  const response = await apiClient.post('/papers/search/agent', { query });
+  return response.data;
+};
+
+export const searchDatasets = async (query: string, page = 1, per_page = 10) => {
+  const response = await apiClient.post('/datasets/search', {
+    query,
+    page,
+    per_page,
+  });
+  return response.data;
+};
+
+export const searchDatasetsWithAgent = async (query: string) => {
+  const response = await apiClient.post('/datasets/search/agent', { query });
   return response.data;
 };
 

@@ -3,7 +3,7 @@ import { PaperCard } from '../components/papers/PaperCard';
 import { Button } from '../components/ui/button';
 import { AgentSearch } from '../components/search/AgentSearch';
 import type { Paper } from '../types';
-import { getPapers, searchWithAgent } from '../lib/api';
+import { getPapers, searchPapersWithAgent } from '../lib/api';
 
 export function Home() {
   const [papers, setPapers] = useState<Paper[]>([]);
@@ -33,7 +33,7 @@ export function Home() {
   const handleAgentSearch = async (query: string) => {
     setSearchLoading(true);
     try {
-      const data = await searchWithAgent(query);
+      const data = await searchPapersWithAgent(query);
       setPapers(data.results);
       setTotalPages(1); // Reset pagination for search results
       setPage(1);

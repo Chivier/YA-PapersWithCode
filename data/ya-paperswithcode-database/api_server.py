@@ -143,8 +143,10 @@ async def root():
         "version": "1.0.0",
         "endpoints": {
             "search": {
-                "sqlite": f"{API_PREFIX}/search/sqlite",
-                "ai_agent": f"{API_PREFIX}/search/agent"
+                "papers": f"{API_PREFIX}/papers/search",
+                "papers_agent": f"{API_PREFIX}/papers/search/agent",
+                "datasets": f"{API_PREFIX}/datasets/search",
+                "datasets_agent": f"{API_PREFIX}/datasets/search/agent"
             },
             "data": {
                 "import": f"{API_PREFIX}/import",
@@ -162,13 +164,38 @@ async def root():
     }
 
 
+@app.get("/health")
+async def health():
+    """Health check endpoint for monitoring."""
+    try:
+        # Check database connection
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM papers")
+            paper_count = cursor.fetchone()[0]
+        
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "papers_count": paper_count,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+
 # ==================== Search Endpoints ====================
 
-@app.post(f"{API_PREFIX}/search/sqlite", response_model=SearchResponse)
-async def sqlite_search(request: SQLiteSearchRequest):
+@app.post(f"{API_PREFIX}/papers/search", response_model=SearchResponse)
+async def search_papers(request: SQLiteSearchRequest):
     """
-    SQLite-based full-text search.
-    Uses SQLite FTS5 for fast keyword matching.
+    Search papers using SQLite full-text search.
+    Searches in paper titles and abstracts.
     """
     start_time = datetime.now()
     
@@ -214,15 +241,77 @@ async def sqlite_search(request: SQLiteSearchRequest):
             total=total,
             page=request.page,
             per_page=request.per_page,
-            search_type="sqlite",
+            search_type="papers",
             query=request.query,
             execution_time=execution_time
         )
 
-@app.post(f"{API_PREFIX}/search/agent", response_model=SearchResponse)
-async def ai_agent_search(request: AISearchRequest):
+@app.post(f"{API_PREFIX}/datasets/search", response_model=SearchResponse)
+async def search_datasets(request: SQLiteSearchRequest):
     """
-    AI agent-based semantic search.
+    Search datasets using SQLite.
+    Searches in dataset names and descriptions.
+    """
+    start_time = datetime.now()
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Build search query for datasets
+        base_query = """
+            SELECT * FROM datasets 
+            WHERE (name LIKE ? OR description LIKE ?)
+        """
+        search_pattern = f"%{request.query}%"
+        params = [search_pattern, search_pattern]
+        
+        # Apply filters
+        if request.filters:
+            if "modality" in request.filters:
+                base_query += " AND modalities LIKE ?"
+                params.append(f'%"{request.filters["modality"]}"%')
+            if "language" in request.filters:
+                base_query += " AND languages LIKE ?"
+                params.append(f'%"{request.filters["language"]}"%')
+        
+        # Count total results
+        count_query = f"SELECT COUNT(*) FROM ({base_query})"
+        cursor.execute(count_query, params)
+        total = cursor.fetchone()[0]
+        
+        # Add pagination with custom sorting
+        base_query += """ 
+            ORDER BY 
+                CASE 
+                    WHEN substr(name, 1, 1) GLOB '[0-9]' THEN 1
+                    WHEN substr(name, 1, 1) GLOB '[A-Za-z]' THEN 2
+                    ELSE 3
+                END,
+                name COLLATE NOCASE ASC
+            LIMIT ? OFFSET ?
+        """
+        params.extend([request.per_page, (request.page - 1) * request.per_page])
+        
+        # Execute search
+        cursor.execute(base_query, params)
+        datasets = [row_to_dataset(row) for row in cursor.fetchall()]
+        
+        execution_time = (datetime.now() - start_time).total_seconds()
+        
+        return SearchResponse(
+            results=datasets,
+            total=total,
+            page=request.page,
+            per_page=request.per_page,
+            search_type="datasets",
+            query=request.query,
+            execution_time=execution_time
+        )
+
+@app.post(f"{API_PREFIX}/papers/search/agent", response_model=SearchResponse)
+async def ai_agent_search_papers(request: AISearchRequest):
+    """
+    AI agent-based semantic search for papers.
     Uses AI models for intelligent paper discovery and ranking.
     """
     start_time = datetime.now()
@@ -232,18 +321,10 @@ async def ai_agent_search(request: AISearchRequest):
         from paper_agent import PaperAgent
         from models import Agent
     except ImportError:
-        raise HTTPException(
-            status_code=503,
-            detail="AI agent search is not available. Please install required AI packages."
-        )
-    
-    try:
-        # For now, perform a simple similarity-based search as placeholder
-        # In production, this would use the actual AI agent
+        # Fallback to simple search if AI modules not available
         with get_db() as conn:
             cursor = conn.cursor()
             
-            # Simple fallback search
             search_pattern = f"%{request.query}%"
             cursor.execute("""
                 SELECT * FROM papers 
@@ -259,13 +340,80 @@ async def ai_agent_search(request: AISearchRequest):
             return SearchResponse(
                 results=papers,
                 total=len(papers),
-                search_type="ai_agent",
+                search_type="ai_agent_papers",
+                query=request.query,
+                execution_time=execution_time
+            )
+    
+    try:
+        # Use AI agent for semantic search (when available)
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            search_pattern = f"%{request.query}%"
+            cursor.execute("""
+                SELECT * FROM papers 
+                WHERE title LIKE ? OR abstract LIKE ?
+                ORDER BY date DESC
+                LIMIT ?
+            """, [search_pattern, search_pattern, request.max_results])
+            
+            papers = [row_to_paper(row) for row in cursor.fetchall()]
+            
+            execution_time = (datetime.now() - start_time).total_seconds()
+            
+            return SearchResponse(
+                results=papers,
+                total=len(papers),
+                search_type="ai_agent_papers",
                 query=request.query,
                 execution_time=execution_time
             )
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI agent search failed: {str(e)}")
+
+@app.post(f"{API_PREFIX}/datasets/search/agent", response_model=SearchResponse)
+async def ai_agent_search_datasets(request: AISearchRequest):
+    """
+    AI agent-based semantic search for datasets.
+    Uses natural language to find relevant datasets.
+    """
+    start_time = datetime.now()
+    
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            # Natural language search for datasets
+            search_pattern = f"%{request.query}%"
+            cursor.execute("""
+                SELECT * FROM datasets 
+                WHERE name LIKE ? OR description LIKE ?
+                ORDER BY 
+                    CASE 
+                        WHEN substr(name, 1, 1) GLOB '[0-9]' THEN 1
+                        WHEN substr(name, 1, 1) GLOB '[A-Za-z]' THEN 2
+                        ELSE 3
+                    END,
+                    name COLLATE NOCASE ASC
+                LIMIT ?
+            """, [search_pattern, search_pattern, request.max_results])
+            
+            datasets = [row_to_dataset(row) for row in cursor.fetchall()]
+            
+            execution_time = (datetime.now() - start_time).total_seconds()
+            
+            return SearchResponse(
+                results=datasets,
+                total=len(datasets),
+                search_type="ai_agent_datasets",
+                query=request.query,
+                execution_time=execution_time
+            )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Dataset search failed: {str(e)}")
 
 
 # ==================== Data Import/Export Endpoints ====================

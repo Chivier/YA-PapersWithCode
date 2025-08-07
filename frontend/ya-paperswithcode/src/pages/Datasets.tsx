@@ -5,7 +5,7 @@ import { FilterSidebar } from '../components/datasets/FilterSidebar';
 import { DatasetCard } from '../components/datasets/DatasetCard';
 import { Button } from '../components/ui/button';
 import { AgentSearch } from '../components/search/AgentSearch';
-import { getDatasets, searchWithAgent } from '../lib/api';
+import { getDatasets, searchDatasetsWithAgent } from '../lib/api';
 import datasetFilters from '../data/dataset-filters.json';
 import type { Dataset } from '../types';
 
@@ -88,7 +88,7 @@ export function Datasets() {
   const handleAgentSearch = async (query: string) => {
     setSearchLoading(true);
     try {
-      const data = await searchWithAgent(query);
+      const data = await searchDatasetsWithAgent(query);
       setDatasets(data.results);
       setTotalDatasets(data.results.length);
     } catch (error) {
