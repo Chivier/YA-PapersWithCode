@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PaperCard } from '../components/papers/PaperCard';
+import { Button } from '../components/ui/button';
 import type { Paper } from '../types';
 import { getPapers } from '../lib/api';
 
@@ -7,14 +8,15 @@ export function Home() {
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [sortOrder, setSortOrder] = useState('date');
 
   const fetchPapers = async (pageNum: number) => {
     setLoading(true);
     try {
       const data = await getPapers(pageNum, 10);
-      setPapers(prev => pageNum === 1 ? data.results : [...prev, ...data.results]);
-      setHasMore(data.results.length > 0 && data.total > pageNum * 10);
+      setPapers(data.results);
+      setTotalPages(Math.ceil(data.total / 10));
     } catch (error) {
       console.error('Failed to fetch papers:', error);
     } finally {
@@ -23,17 +25,20 @@ export function Home() {
   };
 
   useEffect(() => {
-    fetchPapers(1);
-  }, []);
+    fetchPapers(page);
+  }, [page]);
 
-  const loadMorePapers = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchPapers(nextPage);
-  };
+  const sortedPapers = useMemo(() => {
+    return [...papers].sort((a, b) => {
+      if (sortOrder === 'date') {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      } else {
+        return a.title.localeCompare(b.title);
+      }
+    });
+  }, [papers, sortOrder]);
 
   const trendingPapers = papers.filter(p => p.trending);
-  const latestPapers = papers;
 
   return (
     <div className="container py-8">
@@ -53,14 +58,14 @@ export function Home() {
         ) : (
           <>
             {/* Trending Papers Section */}
-            {trendingPapers.length > 0 && (
+            {page === 1 && trendingPapers.length > 0 && (
               <section>
                 <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
                   <span className="text-primary">Trending</span> Papers
                 </h2>
                 <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-                  {trendingPapers.map((paper) => (
-                    <PaperCard key={paper.id} paper={paper} />
+                  {trendingPapers.map((paper, index) => (
+                    <PaperCard key={paper.id || `trending-${index}`} paper={paper} />
                   ))}
                 </div>
               </section>
@@ -68,19 +73,25 @@ export function Home() {
 
             {/* Latest Papers Section */}
             <section>
-              <h2 className="text-2xl font-semibold mb-4">Latest Papers</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold">Latest Papers</h2>
+                <div className="flex gap-2">
+                  <Button variant={sortOrder === 'date' ? 'primary' : 'outline'} onClick={() => setSortOrder('date')}>Sort by Date</Button>
+                  <Button variant={sortOrder === 'title' ? 'primary' : 'outline'} onClick={() => setSortOrder('title')}>Sort by Title</Button>
+                </div>
+              </div>
               <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-                {latestPapers.map((paper) => (
-                  <PaperCard key={paper.id} paper={paper} />
+                {sortedPapers.map((paper, index) => (
+                  <PaperCard key={paper.id || `paper-${index}`} paper={paper} />
                 ))}
               </div>
             </section>
 
-            {/* Load More Button */}
-            <div className="flex justify-center pt-8">
-              <button className="px-6 py-2 border border-primary text-primary rounded-md hover:bg-primary hover:text-primary-foreground transition-colors">
-                Load More Papers
-              </button>
+            {/* Pagination */}
+            <div className="flex justify-center items-center gap-4 pt-8">
+              <Button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+              <span>Page {page} of {totalPages}</span>
+              <Button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>
             </div>
           </>
         )}

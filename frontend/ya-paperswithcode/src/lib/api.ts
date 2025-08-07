@@ -15,10 +15,27 @@ export const getPapers = async (page = 1, per_page = 10): Promise<{ results: Pap
   return response.data;
 };
 
-export const getDatasets = async (page = 1, per_page = 100): Promise<{ results: Dataset[], total: number }> => {
-  const response = await apiClient.get('/datasets', {
-    params: { page, per_page },
-  });
+export const getDatasets = async (
+  page = 1, 
+  per_page = 100,
+  filters?: {
+    modalities?: string[],
+    languages?: string[]
+  }
+): Promise<{ results: Dataset[], total: number }> => {
+  const params: any = { page, per_page };
+  
+  // Add filter parameters if provided
+  if (filters) {
+    if (filters.modalities && filters.modalities.length > 0) {
+      params.modalities = filters.modalities.join(',');
+    }
+    if (filters.languages && filters.languages.length > 0) {
+      params.languages = filters.languages.join(',');
+    }
+  }
+  
+  const response = await apiClient.get('/datasets', { params });
   return response.data;
 };
 

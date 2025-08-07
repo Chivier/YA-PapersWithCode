@@ -1,0 +1,20 @@
+/* Hide native search input decorations */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+/* Additional fix for search input */
+input[type="search"] {
+  -webkit-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Ensure enough padding on the right */
+.search-input {
+  padding-right: 1rem !important;
+}

@@ -5,15 +5,13 @@ import type { FilterOption } from '../../types';
 interface FilterSidebarProps {
   filters: {
     modalities: FilterOption[];
-    tasks: FilterOption[];
     languages: FilterOption[];
   };
   selectedFilters: {
     modalities: string[];
-    tasks: string[];
     languages: string[];
   };
-  onFilterChange: (filterType: 'modalities' | 'tasks' | 'languages', value: string) => void;
+  onFilterChange: (filterType: 'modalities' | 'languages', value: string) => void;
 }
 
 interface FilterSectionProps {
@@ -54,18 +52,15 @@ function FilterSection({
           {displayOptions.map((option) => (
             <label
               key={option.param}
-              className="flex items-center justify-between text-sm cursor-pointer hover:text-primary"
+              className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary"
             >
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  checked={selectedValues.includes(option.param)}
-                  onChange={() => onToggle(option.param)}
-                />
-                <span>{option.name}</span>
-              </div>
-              <span className="text-muted-foreground">({option.count})</span>
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                checked={selectedValues.includes(option.param)}
+                onChange={() => onToggle(option.param)}
+              />
+              <span>{option.name}</span>
             </label>
           ))}
           
@@ -86,12 +81,10 @@ function FilterSection({
 export function FilterSidebar({ filters, selectedFilters, onFilterChange }: FilterSidebarProps) {
   const hasActiveFilters = 
     selectedFilters.modalities.length > 0 ||
-    selectedFilters.tasks.length > 0 ||
     selectedFilters.languages.length > 0;
 
   const clearAllFilters = () => {
     selectedFilters.modalities.forEach(m => onFilterChange('modalities', m));
-    selectedFilters.tasks.forEach(t => onFilterChange('tasks', t));
     selectedFilters.languages.forEach(l => onFilterChange('languages', l));
   };
 
@@ -115,14 +108,6 @@ export function FilterSidebar({ filters, selectedFilters, onFilterChange }: Filt
           options={filters.modalities}
           selectedValues={selectedFilters.modalities}
           onToggle={(value) => onFilterChange('modalities', value)}
-        />
-        
-        <FilterSection
-          title="Filter by Task"
-          options={filters.tasks}
-          selectedValues={selectedFilters.tasks}
-          onToggle={(value) => onFilterChange('tasks', value)}
-          showCount={15}
         />
         
         <FilterSection

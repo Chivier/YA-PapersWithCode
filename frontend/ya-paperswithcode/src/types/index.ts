@@ -4,7 +4,7 @@ export interface Paper {
   authors: string[];
   abstract: string;
   date: string;
-  arxivId?: string;
+  arxiv_id?: string;
   codeLinks?: CodeLink[];
   tags?: string[];
   trending?: boolean;

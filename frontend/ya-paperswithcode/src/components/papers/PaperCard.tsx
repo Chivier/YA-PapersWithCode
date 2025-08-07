@@ -34,7 +34,7 @@ export function PaperCard({ paper, className }: PaperCardProps) {
           <div className="flex items-start justify-between gap-4">
             <h3 className="text-lg font-semibold line-clamp-2">
               <a 
-                href={`https://arxiv.org/abs/${paper.arxivId}`}
+                href={paper.arxiv_id ? `https://arxiv.org/abs/${paper.arxiv_id}` : '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-primary transition-colors"

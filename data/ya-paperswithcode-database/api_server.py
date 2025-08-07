@@ -566,27 +566,66 @@ async def get_methods_count():
 @app.get(f"{API_PREFIX}/datasets")
 async def get_datasets(
     page: int = Query(1, ge=1),
-    per_page: int = Query(50, ge=1, le=200)
+    per_page: int = Query(50, ge=1, le=200),
+    modalities: Optional[str] = Query(None, description="Comma-separated modalities filter"),
+    languages: Optional[str] = Query(None, description="Comma-separated languages filter")
 ):
-    """Get datasets with pagination."""
+    """Get datasets with pagination and filtering."""
     with get_db() as conn:
         cursor = conn.cursor()
         
-        # Get total count
-        cursor.execute("SELECT COUNT(*) FROM datasets")
+        # Build filter conditions
+        where_conditions = []
+        params = []
+        
+        # Filter by modalities (JSON array contains check)
+        # Multiple modalities: AND logic (dataset must have ALL selected modalities)
+        if modalities:
+            modality_list = [m.strip() for m in modalities.split(',')]
+            for modality in modality_list:
+                # Each modality must exist in the dataset's modalities array
+                where_conditions.append(
+                    "EXISTS (SELECT 1 FROM json_each(datasets.modalities) WHERE json_each.value = ?)"
+                )
+                params.append(modality)
+        
+        # Filter by languages (JSON array contains check)
+        # Multiple languages: AND logic (dataset must have ALL selected languages)
+        if languages:
+            language_list = [l.strip() for l in languages.split(',')]
+            for language in language_list:
+                # Each language must exist in the dataset's languages array
+                where_conditions.append(
+                    "EXISTS (SELECT 1 FROM json_each(datasets.languages) WHERE json_each.value = ?)"
+                )
+                params.append(language)
+        
+        # Build WHERE clause - different filter types are combined with AND
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        
+        # Get filtered count
+        count_query = f"SELECT COUNT(*) FROM datasets WHERE {where_clause}"
+        cursor.execute(count_query, params.copy())  # Use a copy for count query
         total = cursor.fetchone()[0]
         
-        query = "SELECT * FROM datasets ORDER BY name LIMIT ? OFFSET ?"
-        params = [per_page, (page - 1) * per_page]
+        # Get filtered results with pagination
+        query = f"SELECT * FROM datasets WHERE {where_clause} ORDER BY name LIMIT ? OFFSET ?"
+        # Create new params list for pagination query
+        page_params = params.copy()
+        page_params.extend([per_page, (page - 1) * per_page])
         
-        cursor.execute(query, params)
+        cursor.execute(query, page_params)
         datasets = [row_to_dataset(row) for row in cursor.fetchall()]
         
         return {
             "results": datasets,
             "total": total,
             "page": page,
-            "per_page": per_page
+            "per_page": per_page,
+            "filters": {
+                "modalities": modalities,
+                "languages": languages
+            }
         }
 
 @app.get(f"{API_PREFIX}/datasets/count")

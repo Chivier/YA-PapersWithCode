@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
+import '../../styles/search.css';
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,25 +63,17 @@ export function Header() {
           </div>
           
           <div className="flex flex-1 items-center justify-end space-x-4">
-            <form onSubmit={handleSearch} className="flex items-center">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <input
-                  type="search"
-                  placeholder="Search papers, datasets, methods..."
-                  className="h-9 w-[300px] rounded-md border border-input bg-background pl-10 pr-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+            <form onSubmit={handleSearch} className="relative w-[300px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+              <input
+                type="search"
+                placeholder="Search papers..."
+                className="search-input h-9 w-full rounded-md border border-input bg-white pl-10 pr-4 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ textIndent: '0px', paddingLeft: '2.5rem' }}
+              />
             </form>
-            
-            <Link
-              to="/login"
-              className="text-sm text-foreground/60 transition-colors hover:text-primary"
-            >
-              Sign In
-            </Link>
           </div>
         </nav>
       </div>
