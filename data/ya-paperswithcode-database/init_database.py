@@ -60,6 +60,32 @@ def create_enhanced_schema(conn):
         ON paper_tasks(task_name, paper_id)
     """)
     
+    # Custom sort index for datasets (Numbers -> Letters -> Special chars)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_datasets_custom_sort 
+        ON datasets(
+            CASE 
+                WHEN substr(name, 1, 1) GLOB '[0-9]' THEN 1
+                WHEN substr(name, 1, 1) GLOB '[A-Za-z]' THEN 2
+                ELSE 3
+            END,
+            name COLLATE NOCASE
+        )
+    """)
+    
+    # Custom sort index for methods (Numbers -> Letters -> Special chars)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_methods_custom_sort 
+        ON methods(
+            CASE 
+                WHEN substr(name, 1, 1) GLOB '[0-9]' THEN 1
+                WHEN substr(name, 1, 1) GLOB '[A-Za-z]' THEN 2
+                ELSE 3
+            END,
+            name COLLATE NOCASE
+        )
+    """)
+    
     # Create views for common queries
     print("Creating optimized views...")
     
@@ -98,7 +124,7 @@ def create_enhanced_schema(conn):
     """)
     
     conn.commit()
-    print("Enhanced schema created successfully!")
+    print("Enhanced schema with custom sort indexes created successfully!")
 
 
 def load_json_data(file_path):

@@ -58,6 +58,11 @@ export const searchPapers = async (query: string, page = 1, per_page = 10) => {
   return response.data;
 };
 
+export const searchWithAgent = async (query: string) => {
+  const response = await apiClient.post('/search/agent', { query });
+  return response.data;
+};
+
 export const getTableCounts = async (): Promise<{ [key: string]: number }> => {
   const response = await apiClient.get('/counts');
   return response.data;

@@ -1,0 +1,77 @@
+/* Global search input styles to prevent icon/text overlap */
+
+/* Remove all native search decorations */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration,
+input[type="search"]::-webkit-inner-spin-button,
+input[type="search"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+input[type="text"]::-webkit-search-decoration,
+input[type="text"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+/* Reset search input to look like text input */
+input[type="search"] {
+  -webkit-appearance: textfield;
+  appearance: textfield;
+  outline-offset: -2px;
+}
+
+/* Ensure proper text positioning with icon */
+.relative input[type="search"],
+.relative input[type="text"] {
+  text-indent: 0 !important;
+}
+
+/* For inputs with left icon, ensure proper padding */
+.relative input.pl-10 {
+  padding-left: 2.5rem !important;
+}
+
+.relative input.pl-8 {
+  padding-left: 2rem !important;
+}
+
+/* Icon positioning */
+.relative .absolute.left-3 {
+  left: 0.75rem;
+  pointer-events: none;
+}
+
+.relative .absolute.left-2 {
+  left: 0.5rem;
+  pointer-events: none;
+}
+
+/* Prevent text from going under the icon */
+.relative input {
+  background-position: left 0.75rem center;
+  background-repeat: no-repeat;
+}
+
+/* Focus styles */
+input[type="search"]:focus,
+input[type="text"]:focus {
+  outline: none;
+}
+
+/* Placeholder styles */
+input::placeholder {
+  opacity: 0.6;
+  color: inherit;
+}
+
+/* Ensure white background for better readability */
+.bg-white,
+.bg-background {
+  background-color: white !important;
+}

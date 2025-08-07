@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { PaperCard } from '../components/papers/PaperCard';
 import { Button } from '../components/ui/button';
+import { AgentSearch } from '../components/search/AgentSearch';
 import type { Paper } from '../types';
-import { getPapers } from '../lib/api';
+import { getPapers, searchWithAgent } from '../lib/api';
 
 export function Home() {
   const [papers, setPapers] = useState<Paper[]>([]);
@@ -10,6 +11,7 @@ export function Home() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortOrder, setSortOrder] = useState('date');
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const fetchPapers = async (pageNum: number) => {
     setLoading(true);
@@ -27,6 +29,20 @@ export function Home() {
   useEffect(() => {
     fetchPapers(page);
   }, [page]);
+
+  const handleAgentSearch = async (query: string) => {
+    setSearchLoading(true);
+    try {
+      const data = await searchWithAgent(query);
+      setPapers(data.results);
+      setTotalPages(1); // Reset pagination for search results
+      setPage(1);
+    } catch (error) {
+      console.error('Agent search failed:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
 
   const sortedPapers = useMemo(() => {
     return [...papers].sort((a, b) => {
@@ -50,6 +66,8 @@ export function Home() {
             The latest in machine learning papers with code implementations
           </p>
         </div>
+
+        <AgentSearch onSearch={handleAgentSearch} loading={searchLoading} />
 
         {loading ? (
           <div className="flex justify-center py-12">

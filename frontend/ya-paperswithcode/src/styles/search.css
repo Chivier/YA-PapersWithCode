@@ -14,7 +14,41 @@ input[type="search"] {
   appearance: textfield;
 }
 
-/* Ensure enough padding on the right */
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 300px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem; /* 12px */
+  height: 1rem; /* 16px */
+  width: 1rem; /* 16px */
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  z-index: 10;
+}
+
 .search-input {
-  padding-right: 1rem !important;
+  height: 2.25rem; /* 36px */
+  width: 100%;
+  border-radius: 0.375rem; /* 6px */
+  border: 1px solid hsl(var(--input));
+  background-color: white;
+  padding-left: 2.5rem; /* 40px - ensure text starts after icon */
+  padding-right: 1rem; /* 16px */
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.25rem; /* 20px */
+  transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.search-input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.search-input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--ring));
 }

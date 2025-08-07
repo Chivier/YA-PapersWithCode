@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { FilterSidebar } from '../components/datasets/FilterSidebar';
 import { DatasetCard } from '../components/datasets/DatasetCard';
 import { Button } from '../components/ui/button';
-import { getDatasets } from '../lib/api';
+import { AgentSearch } from '../components/search/AgentSearch';
+import { getDatasets, searchWithAgent } from '../lib/api';
 import datasetFilters from '../data/dataset-filters.json';
 import type { Dataset } from '../types';
 
@@ -13,6 +14,7 @@ export function Datasets() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalDatasets, setTotalDatasets] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
   
   const datasetsPerPage = 48; // 12 columns x 4 rows
   
@@ -83,6 +85,19 @@ export function Datasets() {
     setSearchParams(newParams);
   };
 
+  const handleAgentSearch = async (query: string) => {
+    setSearchLoading(true);
+    try {
+      const data = await searchWithAgent(query);
+      setDatasets(data.results);
+      setTotalDatasets(data.results.length);
+    } catch (error) {
+      console.error('Agent search failed:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   const activeFilterCount = 
     selectedFilters.modalities.length + 
     selectedFilters.languages.length;
@@ -111,7 +126,7 @@ export function Datasets() {
 
   return (
     <div className="container py-8">
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">Machine Learning Datasets</h1>
@@ -119,6 +134,8 @@ export function Datasets() {
             Browse datasets by modality, task, and language
           </p>
         </div>
+
+        <AgentSearch onSearch={handleAgentSearch} loading={searchLoading} />
 
         {/* Main content */}
         <div className="flex gap-8">

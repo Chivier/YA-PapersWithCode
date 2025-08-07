@@ -540,7 +540,15 @@ async def get_methods(
         cursor.execute("SELECT COUNT(*) FROM methods")
         total = cursor.fetchone()[0]
         
-        query = "SELECT * FROM methods ORDER BY name LIMIT ? OFFSET ?"
+        query = """SELECT * FROM methods 
+        ORDER BY 
+            CASE 
+                WHEN substr(name, 1, 1) GLOB '[0-9]' THEN 1  -- Numbers first
+                WHEN substr(name, 1, 1) GLOB '[A-Za-z]' THEN 2  -- Letters second
+                ELSE 3  -- Special characters last
+            END,
+            name COLLATE NOCASE ASC 
+        LIMIT ? OFFSET ?"""
         params = [per_page, (page - 1) * per_page]
         
         cursor.execute(query, params)
@@ -609,7 +617,16 @@ async def get_datasets(
         total = cursor.fetchone()[0]
         
         # Get filtered results with pagination
-        query = f"SELECT * FROM datasets WHERE {where_clause} ORDER BY name LIMIT ? OFFSET ?"
+        query = f"""SELECT * FROM datasets 
+        WHERE {where_clause} 
+        ORDER BY 
+            CASE 
+                WHEN substr(name, 1, 1) GLOB '[0-9]' THEN 1  -- Numbers first
+                WHEN substr(name, 1, 1) GLOB '[A-Za-z]' THEN 2  -- Letters second
+                ELSE 3  -- Special characters last
+            END,
+            name COLLATE NOCASE ASC 
+        LIMIT ? OFFSET ?"""
         # Create new params list for pagination query
         page_params = params.copy()
         page_params.extend([per_page, (page - 1) * per_page])
