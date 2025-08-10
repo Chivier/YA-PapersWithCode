@@ -5,6 +5,7 @@ import { Datasets } from './pages/Datasets';
 import { DatasetDetail } from './pages/DatasetDetail';
 import { Methods } from './pages/Methods';
 import { StateOfTheArt } from './pages/StateOfTheArt';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="datasets/:id" element={<DatasetDetail />} />
           <Route path="methods" element={<Methods />} />
           <Route path="sota" element={<StateOfTheArt />} />
+          <Route path="/404" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </Router>

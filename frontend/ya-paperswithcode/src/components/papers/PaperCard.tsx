@@ -26,6 +26,14 @@ export function PaperCard({ paper, className }: PaperCardProps) {
     return `${authors.slice(0, 3).join(', ')}, et al.`;
   };
 
+  const handlePaperClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!paper.arxiv_id) {
+      e.preventDefault();
+      const currentOrigin = window.location.origin;
+      window.open(`${currentOrigin}/404?title=${encodeURIComponent(paper.title)}`, '_blank');
+    }
+  };
+
   return (
     <Card className={cn('hover:shadow-lg transition-shadow', className)}>
       <CardContent className="p-6">
@@ -38,6 +46,7 @@ export function PaperCard({ paper, className }: PaperCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-primary transition-colors"
+                onClick={handlePaperClick}
               >
                 {paper.title}
               </a>

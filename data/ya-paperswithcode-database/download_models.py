@@ -28,8 +28,8 @@ def create_model_directories():
 def check_huggingface_models():
     """Check if models are available on HuggingFace"""
     models_to_check = [
-        "pasa-7b-crawler",
-        "pasa-7b-selector",
+        "bytedance-research/pasa-7b-crawler",
+        "bytedance-research/pasa-7b-selector",
         "sentence-transformers/all-MiniLM-L6-v2"
     ]
     
@@ -230,12 +230,23 @@ def main():
     if "sentence-transformers/all-MiniLM-L6-v2" in available_models:
         setup_embedding_model()
     
-    # Since PASA models are not publicly available, create mock versions
-    print("\n📝 Setting up model configurations...")
-    print("   Note: PASA-7B models are not publicly available.")
-    print("   Creating mock configurations for development/testing.")
+    # Try to download PASA models if available
+    models_downloaded = False
+    if "bytedance-research/pasa-7b-crawler" in available_models:
+        if download_from_huggingface("bytedance-research/pasa-7b-crawler", crawler_dir):
+            models_downloaded = True
     
-    create_mock_models(crawler_dir, selector_dir)
+    if "bytedance-research/pasa-7b-selector" in available_models:
+        if download_from_huggingface("bytedance-research/pasa-7b-selector", selector_dir):
+            models_downloaded = True
+    
+    # If models weren't downloaded, create mock versions
+    if not models_downloaded:
+        print("\n📝 Setting up model configurations...")
+        print("   Note: PASA-7B models will use mock configurations for development/testing.")
+        create_mock_models(crawler_dir, selector_dir)
+    else:
+        print("\n✅ Real PASA-7B models successfully downloaded!")
     
     # Update agent configuration
     update_agent_config()

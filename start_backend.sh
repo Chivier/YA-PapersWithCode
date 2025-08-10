@@ -8,6 +8,34 @@ set -e  # Exit on error
 echo "=== YA-PapersWithCode Backend Setup ==="
 echo
 
+# Interactive mode selection
+echo "Select deployment mode:"
+echo "1. Local mode (Local AI model + PapersWithCode database)"
+echo "2. Model only (Only deploy AI model)"
+echo "3. API mode (Check model API + Deploy PapersWithCode database)"
+echo
+read -p "Enter your choice (1-3): " MODE_CHOICE
+
+case $MODE_CHOICE in
+    1)
+        MODE="local"
+        echo "Selected: Local mode"
+        ;;
+    2)
+        MODE="model_only"
+        echo "Selected: Model only"
+        ;;
+    3)
+        MODE="api_mode"
+        echo "Selected: API mode"
+        ;;
+    *)
+        echo "Invalid choice. Using default local mode."
+        MODE="local"
+        ;;
+esac
+echo
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -30,6 +58,35 @@ log_error() {
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 BACKEND_DIR="$SCRIPT_DIR/data/ya-paperswithcode-database"
+
+# Check for .env configuration
+ENV_TEMPLATE="$SCRIPT_DIR/.env.template"
+ENV_FILE="$SCRIPT_DIR/.env"
+
+if [ -f "$ENV_TEMPLATE" ] && [ ! -f "$ENV_FILE" ]; then
+    log_info "Creating .env configuration file..."
+    cp "$ENV_TEMPLATE" "$ENV_FILE"
+    
+    # Update deployment mode in .env based on user selection
+    case $MODE in
+        "local")
+            sed -i.bak 's/DEPLOYMENT_MODE=.*/DEPLOYMENT_MODE=local/' "$ENV_FILE"
+            ;;
+        "model_only")
+            sed -i.bak 's/DEPLOYMENT_MODE=.*/DEPLOYMENT_MODE=model_only/' "$ENV_FILE"
+            ;;
+        "api_mode")
+            sed -i.bak 's/DEPLOYMENT_MODE=.*/DEPLOYMENT_MODE=api_mode/' "$ENV_FILE"
+            ;;
+    esac
+    rm -f "$ENV_FILE.bak" 2>/dev/null || true
+    log_info "Configuration file created at $ENV_FILE"
+    log_info "Please review and update the configuration as needed."
+elif [ -f "$ENV_FILE" ]; then
+    log_info "Using existing .env configuration file"
+else
+    log_warn "No .env template found. Using default configuration."
+fi
 
 # Change to backend directory
 cd "$BACKEND_DIR"
@@ -101,42 +158,47 @@ for file in "${REQUIRED_FILES[@]}"; do
     fi
 done
 
-# Check if JSON data files exist
-DATA_FILES=("papers-with-abstracts.json" "datasets.json" "methods.json" "evaluation-tables.json" "links-between-papers-and-code.json")
-NEED_DOWNLOAD=false
+# Skip database setup for model_only mode
+if [ "$MODE" != "model_only" ]; then
+    # Check if JSON data files exist
+    DATA_FILES=("papers-with-abstracts.json" "datasets.json" "methods.json" "evaluation-tables.json" "links-between-papers-and-code.json")
+    NEED_DOWNLOAD=false
 
-for file in "${DATA_FILES[@]}"; do
-    if [ ! -f "$file" ]; then
-        NEED_DOWNLOAD=true
-        break
-    fi
-done
-
-# Download data if needed
-if [ "$NEED_DOWNLOAD" = true ]; then
-    log_info "Data files not found. Downloading PapersWithCode data..."
-    
-    # Download compressed files
-    BASE_URL="https://github.com/paperswithcode/paperswithcode-data/releases/download/v1.93.2/"
-    
     for file in "${DATA_FILES[@]}"; do
         if [ ! -f "$file" ]; then
-            GZ_FILE="${file}.gz"
-            if [ ! -f "$GZ_FILE" ]; then
-                log_info "Downloading $GZ_FILE..."
-                curl -L -o "$GZ_FILE" "${BASE_URL}${GZ_FILE}"
-            fi
-            
-            log_info "Extracting $GZ_FILE..."
-            gunzip -k "$GZ_FILE" || true
+            NEED_DOWNLOAD=true
+            break
         fi
     done
+
+    # Download data if needed
+    if [ "$NEED_DOWNLOAD" = true ]; then
+        log_info "Data files not found. Downloading PapersWithCode data..."
+        
+        # Download compressed files
+        BASE_URL="https://github.com/paperswithcode/paperswithcode-data/releases/download/v1.93.2/"
+        
+        for file in "${DATA_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+                GZ_FILE="${file}.gz"
+                if [ ! -f "$GZ_FILE" ]; then
+                    log_info "Downloading $GZ_FILE..."
+                    curl -L -o "$GZ_FILE" "${BASE_URL}${GZ_FILE}"
+                fi
+                
+                log_info "Extracting $GZ_FILE..."
+                gunzip -k "$GZ_FILE" || true
+            fi
+        done
+    else
+        log_info "Data files already exist."
+    fi
 else
-    log_info "Data files already exist."
+    log_info "Skipping database data download (model_only mode)"
 fi
 
-# Database initialization with duplicate checking
-if [ ! -f "paperswithcode.db" ]; then
+# Database initialization with duplicate checking (skip for model_only mode)
+if [ "$MODE" != "model_only" ] && [ ! -f "paperswithcode.db" ]; then
     log_info "Database not found. Creating new database..."
     python init_database.py
     
@@ -205,7 +267,7 @@ if repos_removed > 0:
 " || log_warn "Could not check for duplicates"
     
     log_info "Database initialized successfully!"
-else
+elif [ "$MODE" != "model_only" ]; then
     log_info "Database already exists."
     
     # Check if database has data
@@ -311,11 +373,14 @@ if repos_removed > 0:
         log_info "  Datasets: $DATASET_COUNT"
         log_info "Skipping data load - database is already populated."
     fi
+else
+    log_info "Skipping database setup (model_only mode)"
 fi
 
-# Display database statistics
-log_info "Database Statistics:"
-python -c "
+# Display database statistics (skip for model_only mode)
+if [ "$MODE" != "model_only" ]; then
+    log_info "Database Statistics:"
+    python -c "
 import sqlite3
 conn = sqlite3.connect('paperswithcode.db')
 cursor = conn.cursor()
@@ -337,45 +402,93 @@ print(f'  • Repositories: {repos:,}')
 
 conn.close()
 " 2>/dev/null || log_warn "Could not retrieve database statistics"
-
-# Setup AI models for Agent Search
-log_info "Setting up AI models for Agent Search..."
-if [ -f "download_models.py" ]; then
-    # Check if models are already set up
-    if [ ! -d "checkpoints" ]; then
-        log_info "Downloading and configuring models..."
-        python download_models.py || {
-            log_warn "Model setup encountered issues, but continuing with basic search capabilities."
-        }
-    else
-        log_info "Model directories already exist."
-        # Verify config is up to date
-        if [ -f "agent-search/config.json" ]; then
-            # Check if fallback mode is enabled in config
-            if ! grep -q "fallback_enabled" "agent-search/config.json"; then
-                log_info "Updating model configuration..."
-                python download_models.py || {
-                    log_warn "Model configuration update failed, but continuing."
-                }
-            fi
-        fi
-    fi
-else
-    log_warn "download_models.py not found. AI Agent Search will use basic mode only."
 fi
 
-# Display model status
-if [ -d "checkpoints/pasa-7b-crawler" ] && [ -d "checkpoints/pasa-7b-selector" ]; then
-    log_info "Model directories found:"
-    if [ -f "checkpoints/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "checkpoints/pasa-7b-crawler/model.safetensors" ]; then
-        log_info "  ✓ PASA-7B Crawler model found"
-    else
-        log_warn "  ✗ PASA-7B Crawler model not found (using mock configuration)"
+# Setup AI models for Agent Search (skip for api_mode)
+if [ "$MODE" != "api_mode" ]; then
+    log_info "Setting up AI models for Agent Search..."
+    
+    # Check MODEL_PATH from .env if it exists
+    MODEL_PATH="checkpoints"  # Default value
+    if [ -f "$SCRIPT_DIR/.env" ]; then
+        # Extract MODEL_PATH from .env file
+        ENV_MODEL_PATH=$(grep -E "^MODEL_PATH=" "$SCRIPT_DIR/.env" | cut -d'=' -f2 | tr -d "'" | tr -d '"')
+        if [ -n "$ENV_MODEL_PATH" ]; then
+            MODEL_PATH="$ENV_MODEL_PATH"
+            log_info "Using MODEL_PATH from .env: $MODEL_PATH"
+        fi
     fi
-    if [ -f "checkpoints/pasa-7b-selector/pytorch_model.bin" ] || [ -f "checkpoints/pasa-7b-selector/model.safetensors" ]; then
-        log_info "  ✓ PASA-7B Selector model found"
+    
+    if [ -f "download_models.py" ]; then
+        # Check if models are already set up
+        if [ ! -d "$MODEL_PATH" ]; then
+            log_info "Model directory '$MODEL_PATH' not found. Downloading and configuring models..."
+            python download_models.py || {
+                log_warn "Model setup encountered issues, but continuing with basic search capabilities."
+            }
+        else
+            log_info "Model directory '$MODEL_PATH' exists."
+            
+            # Check if model files actually exist
+            MODEL_EXISTS=false
+            if [ -d "$MODEL_PATH/pasa-7b-crawler" ] && [ -d "$MODEL_PATH/pasa-7b-selector" ]; then
+                if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ]; then
+                    if [ -f "$MODEL_PATH/pasa-7b-selector/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-selector/model.safetensors" ]; then
+                        MODEL_EXISTS=true
+                    fi
+                fi
+            fi
+            
+            if [ "$MODEL_EXISTS" = false ]; then
+                log_warn "Model files not found in '$MODEL_PATH'. Downloading models..."
+                python download_models.py || {
+                    log_warn "Model download failed, but continuing with basic search capabilities."
+                }
+            else
+                # Verify config is up to date
+                if [ -f "agent-search/config.json" ]; then
+                    # Check if fallback mode is enabled in config
+                    if ! grep -q "fallback_enabled" "agent-search/config.json"; then
+                        log_info "Updating model configuration..."
+                        python download_models.py || {
+                            log_warn "Model configuration update failed, but continuing."
+                        }
+                    fi
+                fi
+            fi
+        fi
     else
-        log_warn "  ✗ PASA-7B Selector model not found (using mock configuration)"
+        log_warn "download_models.py not found. AI Agent Search will use basic mode only."
+    fi
+else
+    log_info "Skipping AI model setup (api_mode - will use external API)"
+fi
+
+# Display model status (skip for api_mode)
+if [ "$MODE" != "api_mode" ]; then
+    # Use the same MODEL_PATH logic as above
+    MODEL_PATH="checkpoints"  # Default value
+    if [ -f "$SCRIPT_DIR/.env" ]; then
+        ENV_MODEL_PATH=$(grep -E "^MODEL_PATH=" "$SCRIPT_DIR/.env" | cut -d'=' -f2 | tr -d "'" | tr -d '"')
+        if [ -n "$ENV_MODEL_PATH" ]; then
+            MODEL_PATH="$ENV_MODEL_PATH"
+        fi
+    fi
+    
+    if [ -d "$MODEL_PATH/pasa-7b-crawler" ] && [ -d "$MODEL_PATH/pasa-7b-selector" ]; then
+        log_info "Model directories found in '$MODEL_PATH':"
+        if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ]; then
+            log_info "  ✓ PASA-7B Crawler model found"
+        else
+            log_warn "  ✗ PASA-7B Crawler model not found (using mock configuration)"
+        fi
+        if [ -f "$MODEL_PATH/pasa-7b-selector/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-selector/model.safetensors" ]; then
+            log_info "  ✓ PASA-7B Selector model found"
+        else
+            log_warn "  ✗ PASA-7B Selector model not found (using mock configuration)"
+        fi
+    else
+        log_warn "Model directories not found in '$MODEL_PATH'"
     fi
 fi
 
@@ -392,30 +505,59 @@ log_info "Press Ctrl+C to stop the server"
 echo
 echo "=== API Server is starting ==="
 echo "API Documentation: http://localhost:8000/docs"
+echo "Mode: $MODE"
 echo "Available Features:"
-echo "  • Basic SQL/JSON search: ✓ Enabled"
-echo "  • Standard filtering: ✓ Enabled"
-echo "  • Full-text search: ✓ Enabled"
 
-# Check for AI capabilities
-if python -c "import sentence_transformers" 2>/dev/null; then
-    echo "  • Semantic search: ✓ Enabled"
+# Database features
+if [ "$MODE" != "model_only" ]; then
+    echo "  • Basic SQL/JSON search: ✓ Enabled"
+    echo "  • Standard filtering: ✓ Enabled"
+    echo "  • Full-text search: ✓ Enabled"
 else
-    echo "  • Semantic search: ✗ Disabled (install sentence-transformers)"
+    echo "  • Database features: ✗ Disabled (model_only mode)"
 fi
 
-if [ -f "checkpoints/pasa-7b-crawler/config.json" ] && [ -f "checkpoints/pasa-7b-selector/config.json" ]; then
-    if [ -f "checkpoints/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "checkpoints/pasa-7b-crawler/model.safetensors" ]; then
-        echo "  • AI-powered query expansion: ✓ Enabled"
-        echo "  • Multi-layer paper expansion: ✓ Enabled"
+# AI capabilities
+if [ "$MODE" = "api_mode" ]; then
+    echo "  • AI search: ✓ External API mode"
+elif [ "$MODE" != "model_only" ]; then
+    # Check for AI capabilities in local/combined mode
+    if python -c "import sentence_transformers" 2>/dev/null; then
+        echo "  • Semantic search: ✓ Enabled"
     else
-        echo "  • AI-powered search: ✗ Using fallback mode"
+        echo "  • Semantic search: ✗ Disabled (install sentence-transformers)"
+    fi
+
+    # Use the same MODEL_PATH logic for final status check
+    MODEL_PATH="checkpoints"  # Default value
+    if [ -f "$SCRIPT_DIR/.env" ]; then
+        ENV_MODEL_PATH=$(grep -E "^MODEL_PATH=" "$SCRIPT_DIR/.env" | cut -d'=' -f2 | tr -d "'" | tr -d '"')
+        if [ -n "$ENV_MODEL_PATH" ]; then
+            MODEL_PATH="$ENV_MODEL_PATH"
+        fi
+    fi
+    
+    if [ -f "$MODEL_PATH/pasa-7b-crawler/config.json" ] && [ -f "$MODEL_PATH/pasa-7b-selector/config.json" ]; then
+        if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ]; then
+            echo "  • AI-powered query expansion: ✓ Enabled"
+            echo "  • Multi-layer paper expansion: ✓ Enabled"
+        else
+            echo "  • AI-powered search: ✗ Using fallback mode"
+        fi
+    else
+        echo "  • AI-powered search: ✗ Not configured"
     fi
 else
-    echo "  • AI-powered search: ✗ Not configured"
+    # model_only mode
+    if python -c "import sentence_transformers" 2>/dev/null; then
+        echo "  • AI model services: ✓ Available"
+    else
+        echo "  • AI model services: ✗ Missing dependencies"
+    fi
 fi
 
 echo
 
-# Run the API server
+# Run the API server with mode configuration
+export YA_DEPLOYMENT_MODE="$MODE"
 python api_server.py
