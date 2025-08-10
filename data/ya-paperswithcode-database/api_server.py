@@ -1129,7 +1129,7 @@ def main():
     print(f"API Base: http://{host}:{port}{API_PREFIX}")
     print("-" * 50)
     
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run("api_server:app", host=host, port=port, reload=True)
 
 
 if __name__ == "__main__":
