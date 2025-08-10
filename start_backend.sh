@@ -432,7 +432,7 @@ if [ "$MODE" != "api_mode" ]; then
             # Check if model files actually exist
             MODEL_EXISTS=false
             if [ -d "$MODEL_PATH/pasa-7b-crawler" ] && [ -d "$MODEL_PATH/pasa-7b-selector" ]; then
-                if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ]; then
+                if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ] || ls "$MODEL_PATH/pasa-7b-crawler"/model-*.safetensors >/dev/null 2>&1; then
                     if [ -f "$MODEL_PATH/pasa-7b-selector/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-selector/model.safetensors" ]; then
                         MODEL_EXISTS=true
                     fi
@@ -477,7 +477,7 @@ if [ "$MODE" != "api_mode" ]; then
     
     if [ -d "$MODEL_PATH/pasa-7b-crawler" ] && [ -d "$MODEL_PATH/pasa-7b-selector" ]; then
         log_info "Model directories found in '$MODEL_PATH':"
-        if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ]; then
+        if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ] || ls "$MODEL_PATH/pasa-7b-crawler"/model-*.safetensors >/dev/null 2>&1; then
             log_info "  ✓ PASA-7B Crawler model found"
         else
             log_warn "  ✗ PASA-7B Crawler model not found (using mock configuration)"
@@ -538,7 +538,7 @@ elif [ "$MODE" != "model_only" ]; then
     fi
     
     if [ -f "$MODEL_PATH/pasa-7b-crawler/config.json" ] && [ -f "$MODEL_PATH/pasa-7b-selector/config.json" ]; then
-        if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ]; then
+        if [ -f "$MODEL_PATH/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "$MODEL_PATH/pasa-7b-crawler/model.safetensors" ] || ls "$MODEL_PATH/pasa-7b-crawler"/model-*.safetensors >/dev/null 2>&1; then
             echo "  • AI-powered query expansion: ✓ Enabled"
             echo "  • Multi-layer paper expansion: ✓ Enabled"
         else
