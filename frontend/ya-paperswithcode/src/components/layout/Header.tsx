@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
@@ -6,6 +6,7 @@ import { cn } from '../../lib/utils';
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Determine placeholder text based on current page
   const getPlaceholder = () => {
@@ -23,12 +24,28 @@ export function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement search functionality based on current page
-    const searchTarget = location.pathname === '/' ? 'papers' : 
-                        location.pathname === '/datasets' ? 'datasets' :
-                        location.pathname === '/methods' ? 'methods' : 
-                        location.pathname === '/sota' ? 'benchmarks' : 'all';
-    console.log(`Search ${searchTarget}:`, searchQuery);
+    
+    if (!searchQuery.trim()) return;
+    
+    // Navigate to the appropriate page with search query as URL parameter
+    const searchParams = new URLSearchParams({ q: searchQuery.trim() });
+    
+    if (location.pathname === '/datasets') {
+      // Stay on datasets page with search query
+      navigate(`/datasets?${searchParams.toString()}`);
+    } else if (location.pathname === '/methods') {
+      // For methods page, navigate with search query
+      navigate(`/methods?${searchParams.toString()}`);
+    } else if (location.pathname === '/sota') {
+      // For state-of-the-art page, navigate with search query
+      navigate(`/sota?${searchParams.toString()}`);
+    } else {
+      // Default to home/papers page
+      navigate(`/?${searchParams.toString()}`);
+    }
+    
+    // Clear the search input after navigation
+    setSearchQuery('');
   };
 
   return (

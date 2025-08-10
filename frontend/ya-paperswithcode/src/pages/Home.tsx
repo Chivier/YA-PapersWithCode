@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PaperCard } from '../components/papers/PaperCard';
 import { Button } from '../components/ui/button';
 import { AgentSearch } from '../components/search/AgentSearch';
@@ -7,6 +8,7 @@ import type { Paper } from '../types';
 import { getPapers, searchPapers, searchPapersWithAgent } from '../lib/api';
 
 export function Home() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -14,6 +16,7 @@ export function Home() {
   const [sortOrder, setSortOrder] = useState('date');
   const [agentSearchLoading, setAgentSearchLoading] = useState(false);
   const [normalSearchLoading, setNormalSearchLoading] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
 
   const fetchPapers = async (pageNum: number) => {
     setLoading(true);
@@ -28,9 +31,25 @@ export function Home() {
     }
   };
 
+  // Handle search query from URL
   useEffect(() => {
-    fetchPapers(page);
-  }, [page]);
+    const query = searchParams.get('q');
+    if (query) {
+      // Automatically trigger normal search if query parameter exists
+      handleNormalSearch(query);
+    } else {
+      // No search query, fetch regular papers
+      setIsSearchMode(false);
+      fetchPapers(page);
+    }
+  }, [searchParams]);
+
+  // Fetch papers when page changes (only when not in search mode)
+  useEffect(() => {
+    if (!isSearchMode && !searchParams.get('q')) {
+      fetchPapers(page);
+    }
+  }, [page, isSearchMode]);
 
   const handleAgentSearch = async (query: string) => {
     setAgentSearchLoading(true);
@@ -48,16 +67,29 @@ export function Home() {
 
   const handleNormalSearch = async (query: string) => {
     setNormalSearchLoading(true);
+    setIsSearchMode(true);
     try {
-      const data = await searchPapers(query, page, 10);
+      const data = await searchPapers(query, 1, 10);
       setPapers(data.results);
       setTotalPages(1); // Reset pagination for search results
       setPage(1);
+      
+      // Update URL with search query
+      if (!searchParams.get('q') || searchParams.get('q') !== query) {
+        setSearchParams({ q: query });
+      }
     } catch (error) {
       console.error('Normal search failed:', error);
     } finally {
       setNormalSearchLoading(false);
     }
+  };
+
+  const clearSearch = () => {
+    setSearchParams({});
+    setIsSearchMode(false);
+    setPage(1);
+    fetchPapers(1);
   };
 
   const sortedPapers = useMemo(() => {
@@ -83,6 +115,18 @@ export function Home() {
           </p>
         </div>
 
+        {/* Show search query info if searching */}
+        {searchParams.get('q') && (
+          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <p className="text-sm">
+              Showing search results for: <strong>{searchParams.get('q')}</strong>
+            </p>
+            <Button variant="outline" size="sm" onClick={clearSearch}>
+              Clear Search
+            </Button>
+          </div>
+        )}
+        
         <NormalSearch onSearch={handleNormalSearch} loading={normalSearchLoading} />
         <AgentSearch onSearch={handleAgentSearch} loading={agentSearchLoading} />
 

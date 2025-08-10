@@ -22,6 +22,7 @@ export function Datasets() {
   
   // Get filters and page from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const searchQuery = searchParams.get('q') || '';
   
   // Parse filters from URL
   const selectedFilters = {
@@ -33,22 +34,30 @@ export function Datasets() {
     const fetchDatasets = async () => {
       setLoading(true);
       try {
-        // Pass filters to API
-        const filters = {
-          modalities: selectedFilters.modalities,
-          languages: selectedFilters.languages
-        };
-        
-        const data = await getDatasets(currentPage, datasetsPerPage, filters);
-        
-        // Ensure we have valid data
-        if (data && data.results && Array.isArray(data.results)) {
+        // Check if we have a search query
+        if (searchQuery) {
+          // Perform search
+          const data = await searchDatasets(searchQuery, currentPage, datasetsPerPage);
           setDatasets(data.results);
-          setTotalDatasets(data.total || 0);
+          setTotalDatasets(data.results.length);
         } else {
-          console.warn('Invalid data format received from API:', data);
-          setDatasets([]);
-          setTotalDatasets(0);
+          // Normal fetch with filters
+          const filters = {
+            modalities: selectedFilters.modalities,
+            languages: selectedFilters.languages
+          };
+          
+          const data = await getDatasets(currentPage, datasetsPerPage, filters);
+          
+          // Ensure we have valid data
+          if (data && data.results && Array.isArray(data.results)) {
+            setDatasets(data.results);
+            setTotalDatasets(data.total || 0);
+          } else {
+            console.warn('Invalid data format received from API:', data);
+            setDatasets([]);
+            setTotalDatasets(0);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch datasets:', error);
@@ -59,7 +68,7 @@ export function Datasets() {
       }
     };
     fetchDatasets();
-  }, [currentPage, datasetsPerPage, searchParams]); // Re-fetch when URL params change
+  }, [currentPage, datasetsPerPage, searchParams, searchQuery]); // Re-fetch when URL params change
 
   const handleFilterChange = (filterType: 'modalities' | 'languages', value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -103,14 +112,27 @@ export function Datasets() {
   const handleNormalSearch = async (query: string) => {
     setNormalSearchLoading(true);
     try {
-      const data = await searchDatasets(query, currentPage, datasetsPerPage);
+      const data = await searchDatasets(query, 1, datasetsPerPage);
       setDatasets(data.results);
       setTotalDatasets(data.results.length);
+      
+      // Update URL with search query
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('q', query);
+      newParams.delete('page'); // Reset to page 1
+      setSearchParams(newParams);
     } catch (error) {
       console.error('Normal search failed:', error);
     } finally {
       setNormalSearchLoading(false);
     }
+  };
+
+  const clearSearch = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('q');
+    newParams.delete('page');
+    setSearchParams(newParams);
   };
 
   const activeFilterCount = 
@@ -150,6 +172,18 @@ export function Datasets() {
           </p>
         </div>
 
+        {/* Show search query info if searching */}
+        {searchQuery && (
+          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <p className="text-sm">
+              Showing search results for: <strong>{searchQuery}</strong>
+            </p>
+            <Button variant="outline" size="sm" onClick={clearSearch}>
+              Clear Search
+            </Button>
+          </div>
+        )}
+        
         <NormalSearch onSearch={handleNormalSearch} loading={normalSearchLoading} />
         <AgentSearch onSearch={handleAgentSearch} loading={agentSearchLoading} />
 
