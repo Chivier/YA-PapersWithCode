@@ -225,6 +225,7 @@ npm run build
 
 ## 📝 TODO
 
+- [ ] Implement AI agent for paper search.
 - [ ] Provide modular agent search, allowing users to design their own search strategies.
 - [ ] Provide Docker deployment.
 - [ ] Fetch images for datasets.

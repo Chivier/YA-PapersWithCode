@@ -10,6 +10,24 @@ from pathlib import Path
 from .paper_search import PaperSearchAgent
 from .dataset_search import DatasetSearchAgent
 from .models import Agent
+from .model_manager import model_manager
+
+
+class LazyModelWrapper:
+    """Wrapper for lazy-loaded models"""
+    def __init__(self, model_path: str, model_type: str):
+        self.model_path = model_path
+        self.model_type = model_type
+        self._model = None
+    
+    def get_model(self):
+        """Get the actual model, loading if necessary"""
+        return model_manager.get_model(self.model_path, self.model_type)
+    
+    def __getattr__(self, name):
+        """Delegate attribute access to the actual model"""
+        model = self.get_model()
+        return getattr(model, name)
 
 
 class SearchManager:
@@ -37,6 +55,9 @@ class SearchManager:
         
         # Initialize agents
         self.agents = {}
+        self.crawler_path = None  # Store path to crawler model
+        self.selector_path = None  # Store path to selector model
+        self.use_mock_models = True  # Default to mock
         self._initialize_agents()
     
     def _initialize_agents(self):
@@ -60,25 +81,23 @@ class SearchManager:
         if 'USE_MOCK_MODELS' in os.environ:
             use_mock_models = os.environ['USE_MOCK_MODELS'].lower() in ('true', '1', 'yes')
         
+        self.use_mock_models = use_mock_models
         crawler = None
         selector = None
         
         if not use_mock_models:
-            try:
-                # Get model paths from .env or use defaults
-                crawler_model_path = os.getenv('MODEL_PATH', 'checkpoints') + '/pasa-7b-crawler'
-                selector_model_path = os.getenv('MODEL_PATH', 'checkpoints') + '/pasa-7b-selector'
-                
-                print(f"Loading crawler model from: {crawler_model_path}")
-                crawler = Agent(crawler_model_path)
-                
-                print(f"Loading selector model from: {selector_model_path}")
-                selector = Agent(selector_model_path)
-                
-                print("✓ AI models loaded successfully!")
-            except Exception as e:
-                print(f"⚠ Failed to load AI models: {e}")
-                print("Falling back to basic search without AI enhancement")
+            # Get model paths from .env or use defaults
+            self.crawler_path = os.getenv('MODEL_PATH', 'checkpoints') + '/pasa-7b-crawler'
+            self.selector_path = os.getenv('MODEL_PATH', 'checkpoints') + '/pasa-7b-selector'
+            
+            print(f"Model paths configured:")
+            print(f"  Crawler: {self.crawler_path}")
+            print(f"  Selector: {self.selector_path}")
+            print("Models will be loaded on-demand to save memory")
+            
+            # Create lazy-loaded wrapper objects
+            crawler = LazyModelWrapper(self.crawler_path, 'crawler')
+            selector = LazyModelWrapper(self.selector_path, 'selector')
         else:
             print("Using mock models - AI features disabled")
         
@@ -133,6 +152,11 @@ class SearchManager:
         # Add manager metadata
         results['metadata']['search_type'] = search_type
         results['metadata']['agent_type'] = agent_type
+        
+        # Always unload models after use to prevent GPU OOM
+        # Models will be reloaded on next use thanks to lazy loading
+        if not self.use_mock_models:
+            self.unload_models()
         
         return results
     
@@ -250,6 +274,11 @@ class SearchManager:
             'api_settings': self.config.get('api_settings', {}),
             'model_settings': self.config.get('model_settings', {})
         }
+    
+    def unload_models(self):
+        """Unload AI models from GPU memory to free resources"""
+        # Use the global model manager to unload all models
+        model_manager.unload_all()
 
 
 # Convenience function for quick searches

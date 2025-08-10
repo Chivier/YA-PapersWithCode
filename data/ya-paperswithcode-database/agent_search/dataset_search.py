@@ -40,7 +40,17 @@ class DatasetSearchAgent(BaseSearchAgent):
         
         all_datasets = self.api_client.get_datasets_json()
         init_semantic_search(datasets=all_datasets, model_name=self.semantic_model_name)
-        self.llm = LLM(self.llm_model_name)
+        
+        # LLM is optional - only load if model path exists
+        self.llm = None
+        try:
+            if self.config.get('use_llm', False) and self.llm_model_name:
+                self.llm = LLM(self.llm_model_name)
+                print(f"LLM loaded: {self.llm_model_name}")
+        except Exception as e:
+            print(f"LLM not available: {e}")
+            self.llm = None
+        
         self.touch_ids = []
         
         
@@ -134,13 +144,13 @@ class DatasetSearchAgent(BaseSearchAgent):
         
         
         parsed_query = await self._parse_query_with_llm(query)
-        results = self.recommend_datasets(parsed_query)
+        results = await self.recommend_datasets(parsed_query)
         
         filtered_datasets = []
         
         for dataset in results:
             if filters:
-                filtered_dataset = self.filter_by_characteristics([dataset], filters)
+                filtered_dataset = await self.filter_by_characteristics([dataset], filters)
                 filtered_datasets.extend(filtered_dataset)
             else:
                 filtered_datasets.append(dataset)
@@ -325,13 +335,30 @@ class DatasetSearchAgent(BaseSearchAgent):
         q_max_samples = context.get("max_samples", 1000000)
         q_introduced_year = context.get("introduced_year", 0)
 
+        sample_text = ""  # Default value
         if "min_samples" in context and "max_samples" in context:
             sample_text = f"between {q_min_samples} and {q_max_samples} samples."
         elif "min_samples" in context:
             sample_text = f"at least {q_min_samples} samples."
         elif "max_samples" in context:
             sample_text = f"at most {q_max_samples} samples."
-        text = query + sample_text + q_keywords + f"tasks: {', '.join(q_tasks)} modalities: {', '.join(q_modal)} languages: {', '.join(q_lang)} introduced year: {q_introduced_year}"
+        
+        # Build text query for semantic search
+        text_parts = [query]
+        if sample_text:
+            text_parts.append(sample_text)
+        if q_keywords:
+            text_parts.extend(q_keywords)
+        if q_tasks:
+            text_parts.append(f"tasks: {', '.join(q_tasks)}")
+        if q_modal:
+            text_parts.append(f"modalities: {', '.join(q_modal)}")
+        if q_lang:
+            text_parts.append(f"languages: {', '.join(q_lang)}")
+        if q_introduced_year:
+            text_parts.append(f"introduced year: {q_introduced_year}")
+        
+        text = " ".join(text_parts)
         
         
         results = get_semantic_results(text, self.query_datasets)
@@ -351,7 +378,17 @@ class DatasetSearchAgent(BaseSearchAgent):
             Dictionary of extracted filters
         """
         if not self.llm:
-            return {}
+            # Basic parsing without LLM
+            return {
+                "raw_text": query,
+                "keywords": query.split(),
+                "tasks": [],
+                "languages": [],
+                "modalities": [],
+                "min_samples": None,
+                "max_samples": None,
+                "introduced_year": None
+            }
         
         prompt = f"""Parse the following dataset search query and extract structured filters.
         Return a JSON object containing the following fields (use `null` if a field is not present in the query):
@@ -368,7 +405,7 @@ class DatasetSearchAgent(BaseSearchAgent):
         Return only valid JSON without any explanation."""
         
         try:
-            response = await self.llm.generate(prompt)
+            response = self.llm.generate(prompt)
             filters = json.loads(response)
             
             # Validate and normalize the parsed filters

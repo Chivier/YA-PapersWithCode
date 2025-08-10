@@ -12,9 +12,9 @@ def init_semantic_search(papers = None, datasets = None, model_name = 'all-MiniL
     global semantic_engine
     global semantic_engine_dataset
     if papers:
-        semantic_engine = SemanticSearchEngine(papers, model_name=model_name)
-    else:
-        semantic_engine_dataset = SemanticSearchEngine(datasets, model_name=model_name)
+        semantic_engine = SemanticSearchEngine(papers, model_name=model_name, is_dataset=False)
+    if datasets:
+        semantic_engine_dataset = SemanticSearchEngine(datasets, model_name=model_name, is_dataset=True)
     
 def get_semantic_results(query: str, num: int = 10) -> List[Dict]:
     """Get similar papers based on content similarity"""

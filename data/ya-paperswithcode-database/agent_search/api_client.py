@@ -187,8 +187,23 @@ class SearchAPIClient:
         return self.load_json_file("papers-with-abstracts.json")
     
     def get_datasets_json(self) -> List[Dict[str, Any]]:
-        """Load all datasets from JSON file"""
-        return self.load_json_file("datasets.json")
+        """Load all datasets from JSON file and add ID field"""
+        datasets = self.load_json_file("datasets.json")
+        
+        # Add ID field extracted from URL for each dataset
+        for dataset in datasets:
+            if 'url' in dataset and dataset['url']:
+                # Extract ID from URL (e.g., "https://paperswithcode.com/dataset/mnist" -> "mnist")
+                url_parts = dataset['url'].rstrip('/').split('/')
+                if len(url_parts) > 0:
+                    dataset['id'] = url_parts[-1]
+                else:
+                    dataset['id'] = dataset.get('name', '').lower().replace(' ', '-')
+            else:
+                # Fallback: use name as ID
+                dataset['id'] = dataset.get('name', '').lower().replace(' ', '-')
+        
+        return datasets
     
     def get_methods_json(self) -> List[Dict[str, Any]]:
         """Load all methods from JSON file"""

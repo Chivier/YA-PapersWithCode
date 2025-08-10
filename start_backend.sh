@@ -507,6 +507,29 @@ if [ "$MODE" != "api_mode" ]; then
     fi
 fi
 
+# Pre-build embeddings if needed (for local mode and api_mode)
+if [ "$MODE" != "model_only" ]; then
+    # Check if embeddings exist
+    EMBEDDINGS_DIR="embeddings"
+    DATASETS_EMBEDDINGS="$EMBEDDINGS_DIR/datasets_embeddings.pkl"
+    DATASETS_FAISS="$EMBEDDINGS_DIR/datasets_embeddings.faiss"
+    
+    if [ ! -f "$DATASETS_EMBEDDINGS" ] || [ ! -f "$DATASETS_FAISS" ]; then
+        log_info "Building semantic search embeddings (this only needs to be done once)..."
+        log_info "This may take a few minutes on first run..."
+        
+        if [ -f "build_embeddings.py" ]; then
+            python build_embeddings.py --datasets || {
+                log_warn "Failed to build embeddings. Semantic search may be slower."
+            }
+        else
+            log_warn "build_embeddings.py not found. Embeddings will be built on-demand (may use more memory)."
+        fi
+    else
+        log_info "Pre-built embeddings found. Using cached embeddings for faster startup."
+    fi
+fi
+
 # Check if another instance is already running
 if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1; then
     log_warn "Port 8000 is already in use. Stopping existing process..."

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+import gc
 class LLM:
     def __init__(self, model_name):
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -22,6 +24,17 @@ class LLM:
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name
         )
+    
+    def unload(self):
+        """Unload model from GPU memory"""
+        if hasattr(self, 'model') and self.model is not None:
+            del self.model
+            self.model = None
+        if hasattr(self, 'tokenizer'):
+            del self.tokenizer
+            self.tokenizer = None
+        torch.cuda.empty_cache()
+        gc.collect()
     
     def generate(self, prompt):
         text = self.tokenizer.apply_chat_template(
@@ -47,20 +60,52 @@ class LLM:
         return response
         
 class Agent:
-    def __init__(self, model_name):
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype="auto",
-            device_map="auto"
-        )
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name,
-            padding_side='left'
-        )
+    def __init__(self, model_name, auto_load=False):
+        self.model_name = model_name
+        self.model = None
+        self.tokenizer = None
+        # Only load if explicitly requested
+        if auto_load:
+            self.load_model()
+    
+    def load_model(self):
+        """Load model into memory"""
+        if self.model is None:
+            print(f"Loading model: {self.model_name}...")
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype="auto",
+                device_map="auto"
+            )
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name,
+                padding_side='left'
+            )
+            print(f"✓ Model {self.model_name} loaded")
+    
+    def unload(self):
+        """Unload model from GPU memory to free resources"""
+        if self.model is not None:
+            del self.model
+            self.model = None
+        if self.tokenizer is not None:
+            del self.tokenizer
+            self.tokenizer = None
+        torch.cuda.empty_cache()
+        gc.collect()
+        print(f"✓ Model {self.model_name} unloaded from memory")
+    
+    def is_loaded(self):
+        """Check if model is currently loaded"""
+        return self.model is not None
     
     def infer_score(self, prompts):
         if len(prompts) == 0:
             return []
+        
+        # Ensure model is loaded
+        if self.model is None:
+            self.load_model()
         encoded_input = self.tokenizer(prompts, return_tensors='pt', padding=True, truncation=True)
         input_ids = encoded_input.input_ids.cuda(self.model.device)
         attention_mask = encoded_input.attention_mask.cuda(self.model.device)
@@ -78,6 +123,10 @@ class Agent:
         return probs
 
     def infer(self, prompt, sample=False):
+        # Ensure model is loaded
+        if self.model is None:
+            self.load_model()
+            
         text = self.tokenizer.apply_chat_template(
             [{
                 "content": prompt.strip(),
@@ -107,6 +156,10 @@ class Agent:
     def batch_infer(self, prompts, batch_size=8, sample=False):
         if len(prompts) == 0:
             return []
+        
+        # Ensure model is loaded
+        if self.model is None:
+            self.load_model()
         texts = [self.tokenizer.apply_chat_template(
             [{
                 "content": prompt.strip(),

@@ -22,7 +22,7 @@
     },
     "dataset_search": {
       "default": {
-        "data_source": "api",
+        "data_source": "json",
         "search_strategy": "basic",
         "enable_filters": true,
         "recommend_similar": false

@@ -74,6 +74,7 @@ class AISearchRequest(BaseModel):
     model: Optional[str] = Field("default", description="AI model to use")
     max_results: int = Field(20, ge=1, le=100, description="Maximum results to return")
     similarity_threshold: Optional[float] = Field(0.7, ge=0, le=1, description="Similarity threshold")
+    filters: Optional[Dict[str, Any]] = Field(None, description="Additional filters")
 
 class SearchResponse(BaseModel):
     """Unified search response model"""

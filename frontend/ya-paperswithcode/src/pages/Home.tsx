@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PaperCard } from '../components/papers/PaperCard';
 import { Button } from '../components/ui/button';
-import { AgentSearch } from '../components/search/AgentSearch';
+// import { AgentSearch } from '../components/search/AgentSearch';  // Temporarily disabled
 import { NormalSearch } from '../components/search/NormalSearch';
 import type { Paper } from '../types';
-import { getPapers, searchPapers, searchPapersWithAgent } from '../lib/api';
+import { getPapers, searchPapers/*, searchPapersWithAgent*/ } from '../lib/api';  // AI search temporarily disabled
 
 export function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -14,7 +14,7 @@ export function Home() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortOrder, setSortOrder] = useState('date');
-  const [agentSearchLoading, setAgentSearchLoading] = useState(false);
+  // const [agentSearchLoading, setAgentSearchLoading] = useState(false);  // Temporarily disabled
   const [normalSearchLoading, setNormalSearchLoading] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
 
@@ -51,6 +51,8 @@ export function Home() {
     }
   }, [page, isSearchMode]);
 
+  // Temporarily disabled AI-Powered Search handler
+  /*
   const handleAgentSearch = async (query: string) => {
     setAgentSearchLoading(true);
     try {
@@ -64,6 +66,7 @@ export function Home() {
       setAgentSearchLoading(false);
     }
   };
+  */
 
   const handleNormalSearch = async (query: string) => {
     setNormalSearchLoading(true);
@@ -128,7 +131,8 @@ export function Home() {
         )}
         
         <NormalSearch onSearch={handleNormalSearch} loading={normalSearchLoading} />
-        <AgentSearch onSearch={handleAgentSearch} loading={agentSearchLoading} />
+        {/* Temporarily disabled AI-Powered Search */}
+        {/* <AgentSearch onSearch={handleAgentSearch} loading={agentSearchLoading} /> */}
 
         {loading ? (
           <div className="flex justify-center py-12">

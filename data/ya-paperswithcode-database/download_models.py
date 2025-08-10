@@ -165,13 +165,20 @@ def setup_embedding_model():
     
     try:
         from sentence_transformers import SentenceTransformer
+        import torch
         
         model_name = "sentence-transformers/all-MiniLM-L6-v2"
         print(f"  Downloading {model_name}...")
         
-        # This will download and cache the model
-        model = SentenceTransformer(model_name)
-        print(f"  ✓ Embedding model ready: {model_name}")
+        # Force CPU to avoid GPU memory issues
+        device = torch.device('cpu')
+        model = SentenceTransformer(model_name, device=device)
+        print(f"  ✓ Embedding model ready: {model_name} (CPU mode)")
+        
+        # Also download and cache the model files
+        model.save(str(Path(__file__).parent / "embeddings_model"))
+        print(f"  ✓ Model cached locally for faster loading")
+        
         return True
     except ImportError:
         print("  ✗ Please install sentence-transformers: pip install sentence-transformers")
