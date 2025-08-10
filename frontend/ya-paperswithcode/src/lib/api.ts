@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Paper, Dataset, Method } from '../types';
 
 const apiClient = axios.create({
-  baseURL: 'http://0.0.0.0:8000/api/v1',
+  baseURL: 'http://localhost:8000/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },

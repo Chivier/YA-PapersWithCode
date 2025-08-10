@@ -314,13 +314,16 @@ def import_datasets(conn, datasets_file):
     
     for dataset in datasets:
         try:
+            # Generate ID from URL slug, fallback to name if URL is missing
+            dataset_id = dataset.get('url', '').split('/')[-1] if dataset.get('url') else dataset.get('name')
+            
             cursor.execute("""
                 INSERT OR IGNORE INTO datasets (
                     id, name, full_name, homepage, description,
                     paper_title, paper_url, subtasks, modalities, languages
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                dataset.get('id'),
+                dataset_id,
                 dataset.get('name'),
                 dataset.get('full_name'),
                 dataset.get('homepage'),
@@ -334,7 +337,7 @@ def import_datasets(conn, datasets_file):
             imported += 1
         
         except Exception as e:
-            print(f"  Error importing dataset {dataset.get('id')}: {e}")
+            print(f"  Error importing dataset {dataset.get('name')}: {e}")
     
     conn.commit()
     print(f"Successfully imported {imported} datasets!")

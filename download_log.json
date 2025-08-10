@@ -1,0 +1,73 @@
+{
+  "downloads": [
+    {
+      "dataset": "papers",
+      "url": "https://production-media.paperswithcode.com/about/papers-with-abstracts.json.gz",
+      "filename": "papers-with-abstracts.json.gz",
+      "start_time": "2025-08-10T06:24:57.839420",
+      "status": "completed",
+      "file_size": 563802312,
+      "checksum": "6a0a820800d4487d838ce96f12383ea9ae68ffac8ddd08c525c896cf30d4a260",
+      "error": null,
+      "end_time": "2025-08-10T06:25:08.440712",
+      "duration_seconds": 10.601292
+    },
+    {
+      "dataset": "links",
+      "url": "https://production-media.paperswithcode.com/about/links-between-papers-and-code.json.gz",
+      "filename": "links-between-papers-and-code.json.gz",
+      "start_time": "2025-08-10T06:25:08.440888",
+      "status": "completed",
+      "file_size": 26261205,
+      "checksum": "e7c60f2170880af3bd5a5b9469a951341435e4ccfd21d3d18393c52cfec24694",
+      "error": null,
+      "end_time": "2025-08-10T06:25:09.111041",
+      "duration_seconds": 0.670153
+    },
+    {
+      "dataset": "evaluations",
+      "url": "https://production-media.paperswithcode.com/about/evaluation-tables.json.gz",
+      "filename": "evaluation-tables.json.gz",
+      "start_time": "2025-08-10T06:25:09.111238",
+      "status": "completed",
+      "file_size": 21833195,
+      "checksum": "9da9cd53fabf88bd7728551aadaf3dc91c86f87621c884ff7cc4da969b0d95ee",
+      "error": null,
+      "end_time": "2025-08-10T06:25:09.894603",
+      "duration_seconds": 0.783365
+    },
+    {
+      "dataset": "methods",
+      "url": "https://production-media.paperswithcode.com/about/methods.json.gz",
+      "filename": "methods.json.gz",
+      "start_time": "2025-08-10T06:25:09.894776",
+      "status": "completed",
+      "file_size": 5442057,
+      "checksum": "fc5a66d3274d8e39c7673563096bea94d9b52525c754ce944ff843d6f935ac7f",
+      "error": null,
+      "end_time": "2025-08-10T06:25:10.116972",
+      "duration_seconds": 0.222196
+    },
+    {
+      "dataset": "datasets",
+      "url": "https://production-media.paperswithcode.com/about/datasets.json.gz",
+      "filename": "datasets.json.gz",
+      "start_time": "2025-08-10T06:25:10.117135",
+      "status": "completed",
+      "file_size": 8418281,
+      "checksum": "6ef923aaf24ff62c6ef567518728d4c85dba1b23eecbc8e1bb5ad5d6990fe25f",
+      "error": null,
+      "end_time": "2025-08-10T06:25:10.373317",
+      "duration_seconds": 0.256182
+    }
+  ],
+  "github_info": {
+    "repository": "https://github.com/paperswithcode/paperswithcode-data",
+    "last_checked": "2025-08-10T06:24:57.838947",
+    "branch": "master",
+    "last_commit": "2021-10-08T09:43:41Z",
+    "default_branch": "master",
+    "description": "The full dataset behind paperswithcode.com",
+    "updated_at": "2025-08-10T03:35:14Z"
+  }
+}
