@@ -1,131 +1,161 @@
 #!/bin/bash
 
-# Frontend startup script for YA-PapersWithCode
-# This script sets up the Node.js environment and starts the React development server
+# Frontend multi-app startup script for YA-PapersWithCode
+# - Scans each subfolder in frontend/ for package.json
+# - Installs deps if needed
+# - Starts each app on its own port (default base 5173, incrementing)
+# - Gracefully stops all on exit (Ctrl+C)
 
-set -e  # Exit on error
+set -euo pipefail
 
-echo "=== YA-PapersWithCode Frontend Setup ==="
-echo
-
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Function to print colored messages
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+log_info()  { echo -e "${GREEN}[INFO]${NC} $*"; }
+log_warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $*"; }
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-FRONTEND_DIR="$SCRIPT_DIR/frontend/ya-paperswithcode"
+FRONTEND_ROOT="$SCRIPT_DIR/frontend"
 
-# Change to frontend directory
-cd "$FRONTEND_DIR"
-log_info "Working directory: $FRONTEND_DIR"
+# Options
+INSTALL_ONLY="${INSTALL_ONLY:-false}"   # set INSTALL_ONLY=true to skip starting dev servers
+PORT_BASE="${PORT_BASE:-5173}"          # set PORT_BASE to change starting port
 
-# Check if Node.js is installed
-if ! command -v node &> /dev/null; then
-    log_error "Node.js is not installed!"
-    
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        log_info "Please install Node.js using one of the following methods:"
-        echo "  1. Using Homebrew: brew install node"
-        echo "  2. Download from: https://nodejs.org/"
-        echo "  3. Using nvm: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash"
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        # Linux
-        log_info "Please install Node.js using one of the following methods:"
-        echo "  1. Using apt: sudo apt update && sudo apt install nodejs npm"
-        echo "  2. Using snap: sudo snap install node --classic"
-        echo "  3. Download from: https://nodejs.org/"
-    fi
-    exit 1
+log_info "Working directory: $FRONTEND_ROOT"
+
+# Pre-flight: Node and npm
+if ! command -v node >/dev/null 2>&1; then
+  log_error "Node.js is not installed."
+  echo "Install via Homebrew: brew install node"
+  echo "Or from: https://nodejs.org/"
+  exit 1
 fi
-
-# Check Node.js version
-NODE_VERSION=$(node -v)
-log_info "Node.js version: $NODE_VERSION"
-
-# Check if npm is installed
-if ! command -v npm &> /dev/null; then
-    log_error "npm is not installed!"
-    log_info "Please install npm: https://www.npmjs.com/get-npm"
-    exit 1
+if ! command -v npm >/dev/null 2>&1; then
+  log_error "npm is not installed."
+  echo "Install npm: https://www.npmjs.com/get-npm"
+  exit 1
 fi
+log_info "Node.js version: $(node -v)"
+log_info "npm version: $(npm -v)"
 
-NPM_VERSION=$(npm -v)
-log_info "npm version: $NPM_VERSION"
-
-# Check if node_modules exists
-if [ ! -d "node_modules" ]; then
-    log_info "Installing dependencies (this may take a few minutes)..."
-    npm install
-else
-    log_info "Dependencies already installed. Checking for updates..."
-    # Check if package.json is newer than node_modules
-    if [ "package.json" -nt "node_modules" ]; then
-        log_warn "package.json has been modified. Updating dependencies..."
-        npm install
-    else
-        # Check if vite is installed
-        if [ ! -f "node_modules/.bin/vite" ]; then
-            log_warn "Vite not found. Reinstalling dependencies..."
-            npm install
-        else
-            log_info "Dependencies are up to date."
-        fi
-    fi
-fi
-
-# Check if the backend is running
+# Backend health check (optional)
 if ! curl -s http://localhost:8000/health >/dev/null 2>&1; then
-    log_warn "Backend API server is not running at http://localhost:8000"
-    log_warn "Please run ./start_backend.sh in another terminal first!"
-    echo
-    read -p "Do you want to continue anyway? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+  log_warn "Backend API server not detected at http://localhost:8000"
+  log_warn "Run ./start_backend.sh in another terminal if needed."
 else
-    log_info "Backend API server is running at http://localhost:8000"
+  log_info "Backend API server is running at http://localhost:8000"
 fi
 
-# Check if another dev server is already running
-if lsof -Pi :5173 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    log_warn "Port 5173 is already in use. Stopping existing process..."
-    kill $(lsof -Pi :5173 -sTCP:LISTEN -t) 2>/dev/null || true
-    sleep 2
+# Discover frontend projects (portable, no 'mapfile')
+APP_DIRS=()
+if [ -d "$FRONTEND_ROOT" ]; then
+  for dir in "$FRONTEND_ROOT"/*/; do
+    [ -d "$dir" ] || continue
+    dir="${dir%/}"
+    if [ -f "$dir/package.json" ]; then
+      APP_DIRS+=("$dir")
+    fi
+  done
 fi
 
-# Build CSS if needed
-if [ -f "tailwind.config.js" ]; then
-    log_info "Building Tailwind CSS..."
-    npx tailwindcss -i ./src/index.css -o ./src/output.css --minify 2>/dev/null || true
+if [ "${#APP_DIRS[@]}" -eq 0 ]; then
+  log_warn "No apps found. Put apps under $FRONTEND_ROOT/<app> with a package.json."
+  exit 0
 fi
 
-# Start the development server
-log_info "Starting React development server..."
-echo
-echo "=== Frontend Development Server ==="
-echo "Local:    http://localhost:5173"
-echo "Network:  http://$(ipconfig getifaddr en0 2>/dev/null || hostname -I | awk '{print $1}'):5173"
-echo
-echo "Press Ctrl+C to stop the server"
-echo
+# Helper: does package.json contain scripts.dev?
+has_dev_script() {
+  node -e "try{const p=require('$1/package.json'); process.exit(p.scripts&&p.scripts.dev?0:1)}catch(e){process.exit(1)}" >/dev/null 2>&1
+}
 
-# Run the development server using npx directly due to npm mirror issues
-npx vite
+# Track PIDs to cleanup on exit
+PIDS=()
+NAMES=()
+PORTS=()
+
+cleanup() {
+  if [ "${#PIDS[@]}" -gt 0 ]; then
+    echo
+    log_info "Stopping ${#PIDS[@]} frontend process(es)..."
+    for pid in "${PIDS[@]}"; do
+      kill "$pid" 2>/dev/null || true
+    done
+    wait || true
+  fi
+}
+trap cleanup EXIT INT TERM
+
+# Start each app
+CURRENT_PORT="$PORT_BASE"
+INDEX=1
+
+for app_dir in "${APP_DIRS[@]}"; do
+  app_name="$(basename "$app_dir")"
+  log_info "==> ${INDEX}. App: $app_name"
+
+  pushd "$app_dir" >/dev/null
+
+  # Install deps if needed
+  if [ ! -d "node_modules" ]; then
+    log_info "Installing dependencies in $app_name..."
+    if [ -f "package-lock.json" ]; then
+      npm ci
+    else
+      npm install
+    fi
+  else
+    if [ "package.json" -nt "node_modules" ]; then
+      log_warn "package.json changed in $app_name. Updating dependencies..."
+      npm install
+    else
+      log_info "Dependencies are up to date for $app_name."
+    fi
+  fi
+
+  if [ "$INSTALL_ONLY" = "true" ]; then
+    log_info "Install-only mode: skipping dev server for $app_name."
+    popd >/dev/null
+    INDEX=$((INDEX+1))
+    continue
+  fi
+
+  # Choose port; increment until free
+  while lsof -Pi :"$CURRENT_PORT" -sTCP:LISTEN -t >/dev/null 2>&1; do
+    CURRENT_PORT=$((CURRENT_PORT+1))
+  done
+
+  if has_dev_script "$app_dir"; then
+    log_info "Starting '$app_name' via 'npm run dev' on port $CURRENT_PORT..."
+    npm run dev -- --port "$CURRENT_PORT" >/dev/null 2>&1 &
+  else
+    log_warn "No 'dev' script found for $app_name. Using 'npx vite' fallback on port $CURRENT_PORT..."
+    npx vite --port "$CURRENT_PORT" >/dev/null 2>&1 &
+  fi
+
+  pid=$!
+  PIDS+=("$pid")
+  NAMES+=("$app_name")
+  PORTS+=("$CURRENT_PORT")
+
+  log_info "Started $app_name (pid $pid) at http://localhost:$CURRENT_PORT"
+
+  CURRENT_PORT=$((CURRENT_PORT+1))
+  popd >/dev/null
+  INDEX=$((INDEX+1))
+done
+
+if [ "${#PIDS[@]}" -gt 0 ]; then
+  echo
+  echo "=== Frontend Dev Servers ==="
+  for i in "${!PIDS[@]}"; do
+    echo "- ${NAMES[$i]}: http://localhost:${PORTS[$i]}  (pid ${PIDS[$i]})"
+  done
+  echo
+  echo "Press Ctrl+C to stop all."
+  wait
+else
+  log_warn "No dev servers started (INSTALL_ONLY=true?)."
+fi

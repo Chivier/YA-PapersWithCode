@@ -5,7 +5,8 @@ import { FilterSidebar } from '../components/datasets/FilterSidebar';
 import { DatasetCard } from '../components/datasets/DatasetCard';
 import { Button } from '../components/ui/button';
 import { AgentSearch } from '../components/search/AgentSearch';
-import { getDatasets, searchDatasetsWithAgent } from '../lib/api';
+import { NormalSearch } from '../components/search/NormalSearch';
+import { getDatasets, searchDatasets, searchDatasetsWithAgent } from '../lib/api';
 import datasetFilters from '../data/dataset-filters.json';
 import type { Dataset } from '../types';
 
@@ -14,7 +15,8 @@ export function Datasets() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalDatasets, setTotalDatasets] = useState(0);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [agentSearchLoading, setAgentSearchLoading] = useState(false);
+  const [normalSearchLoading, setNormalSearchLoading] = useState(false);
   
   const datasetsPerPage = 48; // 12 columns x 4 rows
   
@@ -86,7 +88,7 @@ export function Datasets() {
   };
 
   const handleAgentSearch = async (query: string) => {
-    setSearchLoading(true);
+    setAgentSearchLoading(true);
     try {
       const data = await searchDatasetsWithAgent(query);
       setDatasets(data.results);
@@ -94,7 +96,20 @@ export function Datasets() {
     } catch (error) {
       console.error('Agent search failed:', error);
     } finally {
-      setSearchLoading(false);
+      setAgentSearchLoading(false);
+    }
+  };
+
+  const handleNormalSearch = async (query: string) => {
+    setNormalSearchLoading(true);
+    try {
+      const data = await searchDatasets(query, currentPage, datasetsPerPage);
+      setDatasets(data.results);
+      setTotalDatasets(data.results.length);
+    } catch (error) {
+      console.error('Normal search failed:', error);
+    } finally {
+      setNormalSearchLoading(false);
     }
   };
 
@@ -135,7 +150,8 @@ export function Datasets() {
           </p>
         </div>
 
-        <AgentSearch onSearch={handleAgentSearch} loading={searchLoading} />
+        <NormalSearch onSearch={handleNormalSearch} loading={normalSearchLoading} />
+        <AgentSearch onSearch={handleAgentSearch} loading={agentSearchLoading} />
 
         {/* Main content */}
         <div className="flex gap-8">

@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { PaperCard } from '../components/papers/PaperCard';
 import { Button } from '../components/ui/button';
 import { AgentSearch } from '../components/search/AgentSearch';
+import { NormalSearch } from '../components/search/NormalSearch';
 import type { Paper } from '../types';
-import { getPapers, searchPapersWithAgent } from '../lib/api';
+import { getPapers, searchPapers, searchPapersWithAgent } from '../lib/api';
 
 export function Home() {
   const [papers, setPapers] = useState<Paper[]>([]);
@@ -11,7 +12,8 @@ export function Home() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sortOrder, setSortOrder] = useState('date');
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [agentSearchLoading, setAgentSearchLoading] = useState(false);
+  const [normalSearchLoading, setNormalSearchLoading] = useState(false);
 
   const fetchPapers = async (pageNum: number) => {
     setLoading(true);
@@ -31,7 +33,7 @@ export function Home() {
   }, [page]);
 
   const handleAgentSearch = async (query: string) => {
-    setSearchLoading(true);
+    setAgentSearchLoading(true);
     try {
       const data = await searchPapersWithAgent(query);
       setPapers(data.results);
@@ -40,7 +42,21 @@ export function Home() {
     } catch (error) {
       console.error('Agent search failed:', error);
     } finally {
-      setSearchLoading(false);
+      setAgentSearchLoading(false);
+    }
+  };
+
+  const handleNormalSearch = async (query: string) => {
+    setNormalSearchLoading(true);
+    try {
+      const data = await searchPapers(query, page, 10);
+      setPapers(data.results);
+      setTotalPages(1); // Reset pagination for search results
+      setPage(1);
+    } catch (error) {
+      console.error('Normal search failed:', error);
+    } finally {
+      setNormalSearchLoading(false);
     }
   };
 
@@ -67,7 +83,8 @@ export function Home() {
           </p>
         </div>
 
-        <AgentSearch onSearch={handleAgentSearch} loading={searchLoading} />
+        <NormalSearch onSearch={handleNormalSearch} loading={normalSearchLoading} />
+        <AgentSearch onSearch={handleAgentSearch} loading={agentSearchLoading} />
 
         {loading ? (
           <div className="flex justify-center py-12">
