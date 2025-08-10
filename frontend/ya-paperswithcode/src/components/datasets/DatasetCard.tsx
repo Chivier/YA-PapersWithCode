@@ -50,14 +50,8 @@ export function DatasetCard({ dataset, className }: DatasetCardProps) {
     }
   };
 
-  // Create URL-safe slug from dataset name
-  const createSlug = (name: string) => {
-    return name.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  };
-
-  const datasetUrl = `/datasets/${dataset.id}-${createSlug(dataset.name)}`;
+  // Use the dataset ID directly for the URL
+  const datasetUrl = `/datasets/${dataset.id}`;
 
   return (
     <Link to={datasetUrl} className="block">

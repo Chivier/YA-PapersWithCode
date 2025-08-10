@@ -59,6 +59,7 @@ export interface Dataset {
   subtasks?: string[];
   modalities?: string[];
   languages?: string[];
+  created_at?: string;
   // UI display fields (for compatibility)
   modality?: string;
   task?: string;
