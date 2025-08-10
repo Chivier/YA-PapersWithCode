@@ -75,7 +75,7 @@ export function DatasetCard({ dataset, className }: DatasetCardProps) {
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <div className="text-muted-foreground">
-                  {getModalityIcon(dataset.modality) || <Image className="h-8 w-8" />}
+                  {dataset.modality && getModalityIcon(dataset.modality) || <Image className="h-8 w-8" />}
                 </div>
               </div>
             )}

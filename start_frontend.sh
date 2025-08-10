@@ -80,7 +80,13 @@ else
         log_warn "package.json has been modified. Updating dependencies..."
         npm install
     else
-        log_info "Dependencies are up to date."
+        # Check if vite is installed
+        if [ ! -f "node_modules/.bin/vite" ]; then
+            log_warn "Vite not found. Reinstalling dependencies..."
+            npm install
+        else
+            log_info "Dependencies are up to date."
+        fi
     fi
 fi
 
@@ -121,5 +127,5 @@ echo
 echo "Press Ctrl+C to stop the server"
 echo
 
-# Run the development server
-npm run dev
+# Run the development server using npx directly due to npm mirror issues
+npx vite
