@@ -223,6 +223,16 @@ npm run build
 # - AWS/GCP/Azure (full stack)
 ```
 
+## 📝 TODO
+
+- [ ] Provide modular agent search, allowing users to design their own search strategies.
+- [ ] Provide Docker deployment.
+- [ ] Fetch images for datasets.
+- [ ] Integrate Hugging Face daily papers to the frontend (jump to [Hugging Face link](https://huggingface.co/papers)).
+- [ ] Provide SOTA API, find SOTAs for datasets (next version, just like paperswithcode in [sota-extractor](https://github.com/paperswithcode/sota-extractor)).
+- [ ] Use NocoDB + PostgreSQL to replace SQLite.
+- [ ] Improve agent search ability.
+
 ## 🤝 Contributing
 
 We welcome contributions to improve YA-PapersWithCode! Here's how you can help:
