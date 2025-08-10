@@ -83,7 +83,7 @@ source .venv/bin/activate
 
 # Install dependencies
 log_info "Installing Python dependencies..."
-uv pip install fastapi uvicorn pydantic python-multipart aiofiles
+uv pip install fastapi uvicorn pydantic python-multipart aiofiles python-dotenv
 
 # Install AI model dependencies
 log_info "Installing AI model dependencies..."
@@ -135,17 +135,208 @@ else
     log_info "Data files already exist."
 fi
 
-# Initialize database if it doesn't exist or if this is the first run
-if [ ! -f "paperswithcode.db" ] || [ ! -f ".initialized" ]; then
-    log_info "Initializing database..."
+# Database initialization with duplicate checking
+if [ ! -f "paperswithcode.db" ]; then
+    log_info "Database not found. Creating new database..."
     python init_database.py
     
-    # Create marker file
-    touch .initialized
+    # Remove duplicates after initial load
+    log_info "Removing duplicate entries..."
+    python -c "
+import sqlite3
+conn = sqlite3.connect('paperswithcode.db')
+cursor = conn.cursor()
+
+# Remove duplicate papers (keeping the first occurrence)
+cursor.execute('''
+    DELETE FROM papers
+    WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM papers
+        GROUP BY id
+    )
+''')
+papers_removed = cursor.rowcount
+
+# Remove duplicate datasets (keeping the first occurrence)
+cursor.execute('''
+    DELETE FROM datasets
+    WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM datasets
+        GROUP BY id
+    )
+''')
+datasets_removed = cursor.rowcount
+
+# Remove duplicate methods (keeping the first occurrence)
+cursor.execute('''
+    DELETE FROM methods
+    WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM methods
+        GROUP BY id
+    )
+''')
+methods_removed = cursor.rowcount
+
+# Remove duplicate repositories (keeping the first occurrence based on paper_id and repo_url)
+cursor.execute('''
+    DELETE FROM repositories
+    WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM repositories
+        GROUP BY paper_id, repo_url
+    )
+''')
+repos_removed = cursor.rowcount
+
+conn.commit()
+conn.close()
+
+if papers_removed > 0:
+    print(f'Removed {papers_removed} duplicate papers')
+if datasets_removed > 0:
+    print(f'Removed {datasets_removed} duplicate datasets')
+if methods_removed > 0:
+    print(f'Removed {methods_removed} duplicate methods')
+if repos_removed > 0:
+    print(f'Removed {repos_removed} duplicate repositories')
+" || log_warn "Could not check for duplicates"
+    
     log_info "Database initialized successfully!"
 else
-    log_info "Database already initialized."
+    log_info "Database already exists."
+    
+    # Check if database has data
+    log_info "Checking database contents..."
+    PAPER_COUNT=$(python -c "
+import sqlite3
+try:
+    conn = sqlite3.connect('paperswithcode.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM papers')
+    count = cursor.fetchone()[0]
+    print(count)
+    conn.close()
+except:
+    print(0)
+" 2>/dev/null)
+    
+    DATASET_COUNT=$(python -c "
+import sqlite3
+try:
+    conn = sqlite3.connect('paperswithcode.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM datasets')
+    count = cursor.fetchone()[0]
+    print(count)
+    conn.close()
+except:
+    print(0)
+" 2>/dev/null)
+    
+    if [ "$PAPER_COUNT" -eq "0" ] || [ "$DATASET_COUNT" -eq "0" ]; then
+        log_warn "Database exists but is empty. Loading data..."
+        python init_database.py
+        
+        # After loading, remove duplicates
+        log_info "Removing duplicate entries..."
+        python -c "
+import sqlite3
+conn = sqlite3.connect('paperswithcode.db')
+cursor = conn.cursor()
+
+# Remove duplicate papers (keeping the first occurrence)
+cursor.execute('''
+    DELETE FROM papers
+    WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM papers
+        GROUP BY id
+    )
+''')
+papers_removed = cursor.rowcount
+
+# Remove duplicate datasets (keeping the first occurrence)
+cursor.execute('''
+    DELETE FROM datasets
+    WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM datasets
+        GROUP BY id
+    )
+''')
+datasets_removed = cursor.rowcount
+
+# Remove duplicate methods (keeping the first occurrence)
+cursor.execute('''
+    DELETE FROM methods
+    WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM methods
+        GROUP BY id
+    )
+''')
+methods_removed = cursor.rowcount
+
+# Remove duplicate repositories (keeping the first occurrence based on paper_id and repo_url)
+cursor.execute('''
+    DELETE FROM repositories
+    WHERE rowid NOT IN (
+        SELECT MIN(rowid)
+        FROM repositories
+        GROUP BY paper_id, repo_url
+    )
+''')
+repos_removed = cursor.rowcount
+
+conn.commit()
+conn.close()
+
+if papers_removed > 0:
+    print(f'Removed {papers_removed} duplicate papers')
+if datasets_removed > 0:
+    print(f'Removed {datasets_removed} duplicate datasets')
+if methods_removed > 0:
+    print(f'Removed {methods_removed} duplicate methods')
+if repos_removed > 0:
+    print(f'Removed {repos_removed} duplicate repositories')
+" || log_warn "Could not check for duplicates"
+        
+        log_info "Data loading complete!"
+    else
+        log_info "Database already contains data:"
+        log_info "  Papers: $PAPER_COUNT"
+        log_info "  Datasets: $DATASET_COUNT"
+        log_info "Skipping data load - database is already populated."
+    fi
 fi
+
+# Display database statistics
+log_info "Database Statistics:"
+python -c "
+import sqlite3
+conn = sqlite3.connect('paperswithcode.db')
+cursor = conn.cursor()
+
+# Get counts
+cursor.execute('SELECT COUNT(*) FROM papers')
+papers = cursor.fetchone()[0]
+cursor.execute('SELECT COUNT(*) FROM datasets')
+datasets = cursor.fetchone()[0]
+cursor.execute('SELECT COUNT(*) FROM methods')
+methods = cursor.fetchone()[0]
+cursor.execute('SELECT COUNT(*) FROM repositories')
+repos = cursor.fetchone()[0]
+
+print(f'  • Papers: {papers:,}')
+print(f'  • Datasets: {datasets:,}')
+print(f'  • Methods: {methods:,}')
+print(f'  • Repositories: {repos:,}')
+
+conn.close()
+" 2>/dev/null || log_warn "Could not retrieve database statistics"
 
 # Setup AI models for Agent Search
 log_info "Setting up AI models for Agent Search..."
