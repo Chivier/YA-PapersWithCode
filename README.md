@@ -215,27 +215,17 @@ Data is automatically downloaded and processed during the initial setup.
 
 ## 🚢 Deployment
 
-### Docker Deployment
 ```bash
-# Build and run with Docker Compose
-docker-compose up -d
+cp .env.template .env
 
-# Or build manually
-docker build -t ya-paperswithcode .
-docker run -p 8000:8000 -p 5173:5173 ya-paperswithcode
+# Update .env manually
+
+# Build backend
+./start_backend.sh
+# Build frontend
+./start_frontend.sh
 ```
 
-### Production Deployment
-```bash
-# Build frontend for production
-cd frontend/ya-paperswithcode
-npm run build
-
-# Deploy to your preferred hosting service:
-# - Vercel/Netlify (frontend)
-# - Railway/Heroku (backend)
-# - AWS/GCP/Azure (full stack)
-```
 
 ## 📝 TODO
 
