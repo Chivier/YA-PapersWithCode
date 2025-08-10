@@ -92,6 +92,21 @@ fi
 cd "$BACKEND_DIR"
 log_info "Working directory: $BACKEND_DIR"
 
+# Load .env file variables into environment
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    log_info "Loading environment variables from .env file..."
+    # Export all variables from .env file (excluding comments and empty lines)
+    while IFS='=' read -r key value; do
+        # Skip comments and empty lines
+        if [[ ! "$key" =~ ^#.*$ ]] && [[ -n "$key" ]]; then
+            # Remove quotes if present
+            value=$(echo "$value" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+            export "$key=$value"
+            log_info "  $key=$value"
+        fi
+    done < "$SCRIPT_DIR/.env"
+fi
+
 # Check if uv is installed
 if ! command -v uv &> /dev/null; then
     log_warn "uv is not installed. Installing uv..."

@@ -4,10 +4,12 @@ Agent Search Manager - Orchestrates different search agents
 
 import json
 import asyncio
+import os
 from typing import Dict, Any, Optional
 from pathlib import Path
 from .paper_search import PaperSearchAgent
 from .dataset_search import DatasetSearchAgent
+from .models import Agent
 
 
 class SearchManager:
@@ -40,10 +42,60 @@ class SearchManager:
     def _initialize_agents(self):
         """Initialize all search agents with their configurations"""
         
+        # Load AI models configuration from .env
+        # First try to load from .env file
+        env_path = Path(__file__).parent.parent.parent / '.env'
+        use_mock_models = True  # Default to mock models
+        
+        if env_path.exists():
+            # Read .env file
+            with open(env_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('USE_MOCK_MODELS='):
+                        use_mock_models = line.split('=')[1].lower() in ('true', '1', 'yes')
+                        break
+        
+        # Also check environment variables
+        if 'USE_MOCK_MODELS' in os.environ:
+            use_mock_models = os.environ['USE_MOCK_MODELS'].lower() in ('true', '1', 'yes')
+        
+        crawler = None
+        selector = None
+        
+        if not use_mock_models:
+            try:
+                # Get model paths from .env or use defaults
+                crawler_model_path = os.getenv('MODEL_PATH', 'checkpoints') + '/pasa-7b-crawler'
+                selector_model_path = os.getenv('MODEL_PATH', 'checkpoints') + '/pasa-7b-selector'
+                
+                print(f"Loading crawler model from: {crawler_model_path}")
+                crawler = Agent(crawler_model_path)
+                
+                print(f"Loading selector model from: {selector_model_path}")
+                selector = Agent(selector_model_path)
+                
+                print("✓ AI models loaded successfully!")
+            except Exception as e:
+                print(f"⚠ Failed to load AI models: {e}")
+                print("Falling back to basic search without AI enhancement")
+        else:
+            print("Using mock models - AI features disabled")
+        
         # Initialize paper search agents
         paper_configs = self.config.get('agents', {}).get('paper_search', {})
-        self.agents['paper_basic'] = PaperSearchAgent(paper_configs.get('default', {}))
-        self.agents['paper_advanced'] = PaperSearchAgent(paper_configs.get('advanced', {}))
+        
+        # Add models to configurations
+        basic_config = paper_configs.get('default', {}).copy()
+        advanced_config = paper_configs.get('advanced', {}).copy()
+        
+        basic_config['crawler'] = crawler
+        basic_config['selector'] = selector
+        advanced_config['crawler'] = crawler
+        advanced_config['selector'] = selector
+        
+        self.agents['paper_basic'] = PaperSearchAgent(basic_config)
+        self.agents['paper_advanced'] = PaperSearchAgent(advanced_config)
         
         # Initialize dataset search agents
         dataset_configs = self.config.get('agents', {}).get('dataset_search', {})

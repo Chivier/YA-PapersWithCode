@@ -46,6 +46,6 @@
     "selector_model": "checkpoints/pasa-7b-selector",
     "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
     "fallback_enabled": true,
-    "use_mock_models": true
+    "use_mock_models": false
   }
 }

@@ -282,10 +282,17 @@ class PaperSearchAgent(BaseSearchAgent):
         # 1. Use the crawler model to generate variations
         # 2. Create queries for different aspects of the search
         # 3. Generate queries for citation exploration
-        prompt = self.prompts["generate_query"].format(user_query=user_query).strip()
-        queries = self.crawler.infer(prompt)
-        queries = [q.strip() for q in re.findall(self.templates["search_template"], user_query, flags=re.DOTALL)][:self.search_queries]
-        
+        if self.crawler:
+            prompt = self.prompts["generate_query"].format(user_query=user_query).strip()
+            response = self.crawler.infer(prompt)
+            queries = [q.strip() for q in re.findall(self.templates["search_template"], response, flags=re.DOTALL)][:self.search_queries]
+            
+            # If no queries found from template, fall back to basic variations
+            if not queries:
+                queries = [user_query]  # Use original query as fallback
+        else:
+            # Fallback: use the original query
+            queries = [user_query]
         
         return queries
     
@@ -306,8 +313,12 @@ class PaperSearchAgent(BaseSearchAgent):
         # 2. Consider citation count
         # 3. Consider recency
         # 4. Apply personalization if available
-        select_prompts = [self.prompts["get_selected"].format(title=paper["title"], abstract=paper["abstract"], user_query=query) for paper in results]
-        scores = self.selector.infer_score(select_prompts)
+        if self.selector:
+            select_prompts = [self.prompts["get_selected"].format(title=paper["title"], abstract=paper["abstract"], user_query=query) for paper in results]
+            scores = self.selector.infer_score(select_prompts)
+        else:
+            # Fallback: use simple keyword matching scores
+            scores = [0.7] * len(results)  # Default moderate relevance score
         
         ranked_papers = []
         for score, paper in zip(scores, results):

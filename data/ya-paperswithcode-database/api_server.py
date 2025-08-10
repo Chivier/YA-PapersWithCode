@@ -13,6 +13,21 @@ from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
 
+# Load environment variables from .env file
+def load_env_file():
+    """Load environment variables from .env file"""
+    env_path = Path(__file__).parent.parent / '.env'
+    if env_path.exists():
+        with open(env_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if '=' in line and not line.startswith('#'):
+                    key, value = line.split('=', 1)
+                    os.environ.setdefault(key, value)
+
+# Load .env file
+load_env_file()
+
 from fastapi import FastAPI, HTTPException, Query, Body, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
