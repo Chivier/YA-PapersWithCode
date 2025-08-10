@@ -2,6 +2,20 @@
 
 > **Yet Another Papers With Code** - A modern recreation of the Papers With Code platform
 
+> [!IMPORTANT]
+> **🚀 Seeking Compute Sponsors for AI Agent Search**
+> 
+> The advanced AI Agent Search feature requires significant computational resources. We are actively seeking compute sponsors to enable this feature on the public web version.
+> 
+> **Current Status:**
+> - 🌐 **Web Version**: Agent Search is temporarily unavailable due to compute limitations
+> - 💻 **Self-Hosted**: Full Agent Search functionality is available for local deployment
+> - 🤝 **Sponsorship Needed**: GPU compute resources or cloud credits to enable public access
+> 
+> If you or your organization can provide compute resources, please open an issue with the label `compute-sponsorship`. Your support will enable free AI-powered search for the entire research community.
+> 
+> **Note**: Users can deploy their own instance with full Agent Search capabilities by following the [deployment guide](#-deployment).
+
 A comprehensive machine learning research platform that provides access to academic papers, datasets, methods, and state-of-the-art benchmarks. This project aims to restore and enhance the functionality of the original Papers With Code website using modern web technologies.
 
 ## 🌟 Overview

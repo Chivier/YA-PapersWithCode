@@ -2,6 +2,19 @@
 
 A comprehensive database and API server for PapersWithCode data with advanced AI-powered search capabilities.
 
+> [!IMPORTANT]
+> **🚀 Seeking Compute Sponsors**
+> 
+> The AI Agent Search feature requires significant computational resources to deliver optimal performance. We are actively seeking compute sponsors to help scale this service and make it freely available to the research community.
+> 
+> If you or your organization can provide GPU compute resources or cloud credits, please reach out to us. Your support will enable:
+> - Faster search response times
+> - Support for more concurrent users
+> - Enhanced model capabilities
+> - Continued free access for researchers worldwide
+> 
+> **Contact us**: Open an issue with the label `compute-sponsorship` or reach out directly through GitHub discussions.
+
 ## 🚀 Features
 
 ### Core Features
