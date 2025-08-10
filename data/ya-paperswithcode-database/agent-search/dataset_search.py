@@ -72,7 +72,7 @@ class DatasetSearchAgent(BaseSearchAgent):
         
         # Expand with similar datasets if requested
         if expand and self.recommend_similar:
-            # TODO:AGENT_SEARCH - Implement dataset similarity search
+            # AGENT_SEARCH - Implement dataset similarity search
             # This should:
             # 1. Find datasets with similar modalities
             # 2. Find datasets used in similar papers
@@ -125,7 +125,7 @@ class DatasetSearchAgent(BaseSearchAgent):
         """
         # Load all datasets from JSON
         
-        # TODO:AGENT_SEARCH - Implement advanced dataset filtering
+        # AGENT_SEARCH - Implement advanced dataset filtering
         # This should:
         # 1. Parse natural language queries (e.g., "image datasets with more than 10k samples")
         # 2. Apply complex filters on metadata
@@ -159,7 +159,7 @@ class DatasetSearchAgent(BaseSearchAgent):
         Returns:
             Expanded search results
         """
-        # TODO:AGENT_SEARCH - Implement dataset expansion
+        # AGENT_SEARCH - Implement dataset expansion
         # This should:
         # 1. Find datasets with similar characteristics
         # 2. Find datasets commonly used together
@@ -239,7 +239,7 @@ class DatasetSearchAgent(BaseSearchAgent):
         Returns:
             Filtered datasets
         """
-        # TODO:AGENT_SEARCH - Implement characteristic-based filtering
+        # AGENT_SEARCH - Implement characteristic-based filtering
         # This should handle:
         # 1. Number of samples
         # 2. Data modalities
@@ -310,7 +310,7 @@ class DatasetSearchAgent(BaseSearchAgent):
         Returns:
             Recommended datasets
         """
-        # TODO:AGENT_SEARCH - Implement dataset recommendation
+        # AGENT_SEARCH - Implement dataset recommendation
         # This should:
         # 1. Analyze the context (paper, task, etc.)
         # 2. Find commonly used datasets for the context
@@ -421,6 +421,7 @@ class DatasetSearchAgent(BaseSearchAgent):
         """Extract sample size from dataset description"""
         text_lower = text.lower()
         
+        # TODO: use agent search replace regex
         total_patterns = [
             r'total of (\d+(?:,\d+)*(?:k|m)?)',
             r'(\d+(?:,\d+)*(?:k|m)?)\s*(?:examples|samples|instances|data points|images|texts|records|entries) in total',
@@ -441,6 +442,7 @@ class DatasetSearchAgent(BaseSearchAgent):
         if train_test_info['total']:
             return train_test_info['total']
         
+        # TODO: use agent search replace regex
         general_patterns = [
             r'(\d+(?:,\d+)*(?:k|m)?)\s*(?:examples|samples|instances|data points|images|texts|records|entries)',
             r'(\d+(?:,\d+)*(?:k|m)?)\s*(?:training|test|validation)'
@@ -466,6 +468,7 @@ class DatasetSearchAgent(BaseSearchAgent):
             'total': None
         }
         
+        # TODO: use agent search replace regex
         # 训练集模式
         train_patterns = [
             r'training set of (\d+(?:,\d+)*(?:k|m)?)',
@@ -474,6 +477,7 @@ class DatasetSearchAgent(BaseSearchAgent):
             r'train.*?(\d+(?:,\d+)*(?:k|m)?)'
         ]
         
+        # TODO: use agent search replace regex
         # 测试集模式
         test_patterns = [
             r'test set of (\d+(?:,\d+)*(?:k|m)?)',
@@ -481,6 +485,7 @@ class DatasetSearchAgent(BaseSearchAgent):
             r'test.*?(\d+(?:,\d+)*(?:k|m)?)'
         ]
         
+        # TODO: use agent search replace regex
         # 验证集模式
         val_patterns = [
             r'validation set of (\d+(?:,\d+)*(?:k|m)?)',
@@ -488,6 +493,7 @@ class DatasetSearchAgent(BaseSearchAgent):
             r'val.*?(\d+(?:,\d+)*(?:k|m)?)'
         ]
         
+        # TODO: use agent search replace regex
         # 提取各个数据集大小
         for patterns, key in [(train_patterns, 'train'), (test_patterns, 'test'), (val_patterns, 'validation')]:
             for pattern in patterns:

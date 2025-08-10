@@ -438,7 +438,7 @@ async def ai_agent_search_papers(request: AISearchRequest):
             **search_params
         )
         
-        # TODO:AGENT_SEARCH - Once the advanced search is implemented, remove this fallback
+        # AGENT_SEARCH - Once the advanced search is implemented, remove this fallback
         # For now, if no results from agent, fallback to simple search
         if not result.get('results'):
             with get_db() as conn:
@@ -532,7 +532,7 @@ async def ai_agent_search_datasets(request: AISearchRequest):
             **search_params
         )
         
-        # TODO:AGENT_SEARCH - Once the advanced search is implemented, remove this fallback
+        # AGENT_SEARCH - Once the advanced search is implemented, remove this fallback
         # For now, if no results from agent, fallback to simple search
         if not result.get('results'):
             with get_db() as conn:
