@@ -232,6 +232,7 @@ npm run build
 - [ ] Provide SOTA API, find SOTAs for datasets (next version, just like paperswithcode in [sota-extractor](https://github.com/paperswithcode/sota-extractor)).
 - [ ] Use NocoDB + PostgreSQL to replace SQLite.
 - [ ] Improve agent search ability.
+- [ ] Use Redis to improve performance.
 
 ## 🤝 Contributing
 
