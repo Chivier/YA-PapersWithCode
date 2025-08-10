@@ -102,6 +102,8 @@ export function Header() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
               <input
                 type="text"
+                id="header-search-input"
+                name="header-search-query"
                 placeholder={getPlaceholder()}
                 className="h-9 w-full rounded-md border border-input bg-white pl-10 pr-4 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 value={searchQuery}

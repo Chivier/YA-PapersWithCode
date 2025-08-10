@@ -58,6 +58,8 @@ function FilterSection({
             >
               <input
                 type="checkbox"
+                id={`filter-${option.param}`}
+                name={`filter-${option.param}`}
                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 checked={selectedValues.includes(option.param)}
                 onChange={() => onToggle(option.param)}
@@ -135,6 +137,8 @@ export function FilterSidebar({
           <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary">
             <input
               type="checkbox"
+              id="hide-without-link"
+              name="hide-without-link"
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               checked={hideWithoutLink}
               onChange={(e) => onToggleHideWithoutLink?.(e.target.checked)}

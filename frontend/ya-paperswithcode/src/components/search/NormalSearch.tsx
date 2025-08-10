@@ -32,6 +32,8 @@ export function NormalSearch({ onSearch, loading }: NormalSearchProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
           <input
             type="text"
+            id="normal-search-input"
+            name="normal-search-query"
             placeholder={location.pathname === '/datasets'
               ? "Search datasets..."
               : "Search papers..."}

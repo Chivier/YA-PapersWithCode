@@ -30,6 +30,8 @@ export function AgentSearch({ onSearch, loading }: AgentSearchProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
           <input
             type="text"
+            id="agent-search-input"
+            name="agent-search-query"
             placeholder={location.pathname === '/datasets'
               ? "e.g., 'image classification datasets with more than 10k samples'"
               : "e.g., 'papers on diffusion models for image generation'"}
