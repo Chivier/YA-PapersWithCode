@@ -10,6 +10,10 @@ import requests
 from pathlib import Path
 from typing import Optional
 
+# Check if model download should be skipped
+SKIP_MODEL_DOWNLOAD = os.getenv('SKIP_MODEL_DOWNLOAD', 'false').lower() in ('true', '1', 'yes')
+DEPLOYMENT_MODE = os.getenv('DEPLOYMENT_MODE', 'local')
+
 def create_model_directories():
     """Create necessary directories for model checkpoints"""
     base_dir = Path(__file__).parent
@@ -223,6 +227,21 @@ def main():
     print("=" * 60)
     print("🚀 YA-PapersWithCode Model Setup")
     print("=" * 60)
+    
+    # Check if model download should be skipped
+    if SKIP_MODEL_DOWNLOAD or DEPLOYMENT_MODE != 'local':
+        print("\n📝 Model download skipped")
+        print(f"   SKIP_MODEL_DOWNLOAD={SKIP_MODEL_DOWNLOAD}")
+        print(f"   DEPLOYMENT_MODE={DEPLOYMENT_MODE}")
+        
+        if DEPLOYMENT_MODE == 'api_mode':
+            print("\n✓ Using OpenAI API mode - no local models needed")
+        else:
+            print("\n✓ Models will be downloaded on demand if needed")
+        
+        # Still create config for mock models
+        create_config_files()
+        return
     
     # Check requirements
     requirements_ok = check_requirements()

@@ -1106,8 +1106,9 @@ def main():
         print("Please run the database initialization script first.")
         sys.exit(1)
     
-    port = int(os.getenv("PORT", DEFAULT_PORT))
-    host = os.getenv("HOST", "0.0.0.0")
+    # Support both PORT and BACKEND_PORT for flexibility
+    port = int(os.getenv("BACKEND_PORT", os.getenv("PORT", DEFAULT_PORT)))
+    host = os.getenv("BACKEND_HOST", os.getenv("HOST", "0.0.0.0"))
     
     print(f"Starting PapersWithCode API Server")
     print(f"Database: {DB_PATH}")
