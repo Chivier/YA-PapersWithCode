@@ -176,7 +176,7 @@ if [ "$MODE" != "model_only" ]; then
         log_info "Data files not found. Downloading PapersWithCode data..."
         
         # Download compressed files
-        BASE_URL="https://github.com/paperswithcode/paperswithcode-data/releases/download/v1.93.2/"
+        BASE_URL="https://production-media.paperswithcode.com/about/"
         
         for file in "${DATA_FILES[@]}"; do
             if [ ! -f "$file" ]; then

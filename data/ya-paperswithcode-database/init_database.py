@@ -130,8 +130,17 @@ def create_enhanced_schema(conn):
 def load_json_data(file_path):
     """Load JSON data from file (supports .gz files)."""
     if file_path.endswith('.gz'):
-        with gzip.open(file_path, 'rt', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with gzip.open(file_path, 'rt', encoding='utf-8') as f:
+                return json.load(f)
+        except gzip.BadGzipFile:
+            # File might be corrupted or contain error message, check content
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content.startswith('Not Found') or content.startswith('404'):
+                    raise FileNotFoundError(f"File {file_path} contains download error: {content}")
+                else:
+                    raise ValueError(f"File {file_path} is not a valid gzip file: {content[:50]}")
     else:
         with open(file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
