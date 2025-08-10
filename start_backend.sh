@@ -530,19 +530,22 @@ if [ "$MODE" != "model_only" ]; then
     fi
 fi
 
+# Get backend port from environment or use default
+BACKEND_PORT="${BACKEND_PORT:-8000}"
+
 # Check if another instance is already running
-if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    log_warn "Port 8000 is already in use. Stopping existing process..."
-    kill $(lsof -Pi :8000 -sTCP:LISTEN -t) 2>/dev/null || true
+if lsof -Pi :$BACKEND_PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
+    log_warn "Port $BACKEND_PORT is already in use. Stopping existing process..."
+    kill $(lsof -Pi :$BACKEND_PORT -sTCP:LISTEN -t) 2>/dev/null || true
     sleep 2
 fi
 
 # Start the API server
-log_info "Starting API server on http://localhost:8000"
+log_info "Starting API server on http://localhost:$BACKEND_PORT"
 log_info "Press Ctrl+C to stop the server"
 echo
 echo "=== API Server is starting ==="
-echo "API Documentation: http://localhost:8000/docs"
+echo "API Documentation: http://localhost:$BACKEND_PORT/docs"
 echo "Mode: $MODE"
 echo "Available Features:"
 

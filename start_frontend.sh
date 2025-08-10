@@ -20,9 +20,24 @@ log_error() { echo -e "${RED}[ERROR]${NC} $*"; }
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 FRONTEND_ROOT="$SCRIPT_DIR/frontend"
 
+# Load environment variables from .env if it exists
+ENV_FILE="$SCRIPT_DIR/.env"
+if [ -f "$ENV_FILE" ]; then
+  log_info "Loading environment variables from .env file..."
+  while IFS='=' read -r key value; do
+    # Skip comments and empty lines
+    if [[ ! "$key" =~ ^#.*$ ]] && [[ -n "$key" ]]; then
+      # Remove quotes if present
+      value=$(echo "$value" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+      export "$key=$value"
+    fi
+  done < "$ENV_FILE"
+fi
+
 # Options
 INSTALL_ONLY="${INSTALL_ONLY:-false}"   # set INSTALL_ONLY=true to skip starting dev servers
-PORT_BASE="${PORT_BASE:-5173}"          # set PORT_BASE to change starting port
+PORT_BASE="${FRONTEND_PORT:-5173}"      # Use FRONTEND_PORT from .env or default to 5173
+BACKEND_PORT="${BACKEND_PORT:-8000}"    # Use BACKEND_PORT from .env or default to 8000
 
 log_info "Working directory: $FRONTEND_ROOT"
 
@@ -42,11 +57,11 @@ log_info "Node.js version: $(node -v)"
 log_info "npm version: $(npm -v)"
 
 # Backend health check (optional)
-if ! curl -s http://localhost:8000/health >/dev/null 2>&1; then
-  log_warn "Backend API server not detected at http://localhost:8000"
+if ! curl -s http://localhost:${BACKEND_PORT}/health >/dev/null 2>&1; then
+  log_warn "Backend API server not detected at http://localhost:${BACKEND_PORT}"
   log_warn "Run ./start_backend.sh in another terminal if needed."
 else
-  log_info "Backend API server is running at http://localhost:8000"
+  log_info "Backend API server is running at http://localhost:${BACKEND_PORT}"
 fi
 
 # Discover frontend projects (portable, no 'mapfile')
@@ -57,6 +72,9 @@ if [ -d "$FRONTEND_ROOT" ]; then
     dir="${dir%/}"
     if [ -f "$dir/package.json" ]; then
       APP_DIRS+=("$dir")
+      # Create/update .env.development with correct backend port
+      echo "VITE_API_URL=http://localhost:${BACKEND_PORT}/api/v1" > "$dir/.env.development"
+      log_info "Updated $dir/.env.development with BACKEND_PORT=${BACKEND_PORT}"
     fi
   done
 fi
