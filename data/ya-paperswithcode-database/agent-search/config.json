@@ -44,6 +44,8 @@
   "model_settings": {
     "crawler_model": "checkpoints/pasa-7b-crawler",
     "selector_model": "checkpoints/pasa-7b-selector",
-    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "fallback_enabled": true,
+    "use_mock_models": true
   }
 }

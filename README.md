@@ -249,10 +249,11 @@ The data from PapersWithCode is available under the Creative Commons Attribution
 
 ## 🙏 Acknowledgments
 
-- Original [Papers With Code](https://web.archive.org/web/20250630093841/https://paperswithcode.com) for inspiration
-- [PapersWithCode Data Repository](https://github.com/paperswithcode/paperswithcode-data) for providing open research data
-- [shadcn/ui](https://ui.shadcn.com/) for beautiful UI components
-- The ML research community for their valuable contributions
+- [Papers With Code](https://github.com/paperswithcode) for their invaluable data and platform.
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful and functional UI components.
+- [Pasa](https://github.com/bytedance/pasa) by ByteDance for insights into advanced search architecture.
+- [cline](https://github.com/cline/cline) for inspiration in developer tooling.
+- The ML research community for their continuous contributions to open science.
 
 ## 📞 Support
 

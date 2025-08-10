@@ -198,21 +198,31 @@ class DatasetSearchAgent(BaseSearchAgent):
 
             return score / total_weight if total_weight > 0 else 0
 
-        exist_datasets = [dataset['url'] for dataset in initial_results]
+        exist_datasets = [dataset.get('id') or dataset.get('url') for dataset in initial_results]
         all_datasets = self.api_client.get_datasets_json()
-        expanded_results = set()
+        expanded_results = []
+        expanded_ids = set()  # Track IDs to avoid duplicates
+        
         for initial_dataset in initial_results:
             for dataset in all_datasets:
-                if dataset['url'] in exist_datasets:
+                dataset_id = dataset.get('id') or dataset.get('url')
+                
+                # Skip if already in results or already added
+                if dataset_id in exist_datasets or dataset_id in expanded_ids:
                     continue
+                    
                 similarity = calculate_similarity(initial_dataset, dataset)
                 if similarity >= 0.5:
-                    expanded_results.add(dataset)
+                    expanded_results.append(dataset)
+                    expanded_ids.add(dataset_id)
                 
-                if dataset['name'] in initial_dataset['variants']:
-                    expanded_results.add(dataset)
+                # Check variants if available
+                if 'variants' in initial_dataset and dataset.get('name') in initial_dataset.get('variants', []):
+                    if dataset_id not in expanded_ids:
+                        expanded_results.append(dataset)
+                        expanded_ids.add(dataset_id)
                             
-        expanded_results = extend_datasets_by_similarity(initial_results, list(expanded_results), self.expand_datasets)
+        expanded_results = extend_datasets_by_similarity(initial_results, expanded_results, self.expand_datasets)
 
         return expanded_results
         

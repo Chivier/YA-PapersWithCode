@@ -85,6 +85,12 @@ source .venv/bin/activate
 log_info "Installing Python dependencies..."
 uv pip install fastapi uvicorn pydantic python-multipart aiofiles
 
+# Install AI model dependencies
+log_info "Installing AI model dependencies..."
+uv pip install requests sentence-transformers torch transformers huggingface_hub || {
+    log_warn "Some AI dependencies could not be installed. AI features may be limited."
+}
+
 # Check required Python files
 REQUIRED_FILES=("api_server.py" "init_database.py" "schema.sql")
 for file in "${REQUIRED_FILES[@]}"; do
@@ -141,6 +147,47 @@ else
     log_info "Database already initialized."
 fi
 
+# Setup AI models for Agent Search
+log_info "Setting up AI models for Agent Search..."
+if [ -f "download_models.py" ]; then
+    # Check if models are already set up
+    if [ ! -d "checkpoints" ]; then
+        log_info "Downloading and configuring models..."
+        python download_models.py || {
+            log_warn "Model setup encountered issues, but continuing with basic search capabilities."
+        }
+    else
+        log_info "Model directories already exist."
+        # Verify config is up to date
+        if [ -f "agent-search/config.json" ]; then
+            # Check if fallback mode is enabled in config
+            if ! grep -q "fallback_enabled" "agent-search/config.json"; then
+                log_info "Updating model configuration..."
+                python download_models.py || {
+                    log_warn "Model configuration update failed, but continuing."
+                }
+            fi
+        fi
+    fi
+else
+    log_warn "download_models.py not found. AI Agent Search will use basic mode only."
+fi
+
+# Display model status
+if [ -d "checkpoints/pasa-7b-crawler" ] && [ -d "checkpoints/pasa-7b-selector" ]; then
+    log_info "Model directories found:"
+    if [ -f "checkpoints/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "checkpoints/pasa-7b-crawler/model.safetensors" ]; then
+        log_info "  ✓ PASA-7B Crawler model found"
+    else
+        log_warn "  ✗ PASA-7B Crawler model not found (using mock configuration)"
+    fi
+    if [ -f "checkpoints/pasa-7b-selector/pytorch_model.bin" ] || [ -f "checkpoints/pasa-7b-selector/model.safetensors" ]; then
+        log_info "  ✓ PASA-7B Selector model found"
+    else
+        log_warn "  ✗ PASA-7B Selector model not found (using mock configuration)"
+    fi
+fi
+
 # Check if another instance is already running
 if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1; then
     log_warn "Port 8000 is already in use. Stopping existing process..."
@@ -154,6 +201,29 @@ log_info "Press Ctrl+C to stop the server"
 echo
 echo "=== API Server is starting ==="
 echo "API Documentation: http://localhost:8000/docs"
+echo "Available Features:"
+echo "  • Basic SQL/JSON search: ✓ Enabled"
+echo "  • Standard filtering: ✓ Enabled"
+echo "  • Full-text search: ✓ Enabled"
+
+# Check for AI capabilities
+if python -c "import sentence_transformers" 2>/dev/null; then
+    echo "  • Semantic search: ✓ Enabled"
+else
+    echo "  • Semantic search: ✗ Disabled (install sentence-transformers)"
+fi
+
+if [ -f "checkpoints/pasa-7b-crawler/config.json" ] && [ -f "checkpoints/pasa-7b-selector/config.json" ]; then
+    if [ -f "checkpoints/pasa-7b-crawler/pytorch_model.bin" ] || [ -f "checkpoints/pasa-7b-crawler/model.safetensors" ]; then
+        echo "  • AI-powered query expansion: ✓ Enabled"
+        echo "  • Multi-layer paper expansion: ✓ Enabled"
+    else
+        echo "  • AI-powered search: ✗ Using fallback mode"
+    fi
+else
+    echo "  • AI-powered search: ✗ Not configured"
+fi
+
 echo
 
 # Run the API server
