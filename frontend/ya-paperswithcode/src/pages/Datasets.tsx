@@ -23,6 +23,7 @@ export function Datasets() {
   // Get filters and page from URL
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const searchQuery = searchParams.get('q') || '';
+  const hideWithoutLink = searchParams.get('hideWithoutLink') === 'true';
   
   // Parse filters from URL
   const selectedFilters = {
@@ -96,6 +97,21 @@ export function Datasets() {
     setSearchParams(newParams);
   };
 
+  const handleToggleHideWithoutLink = (value: boolean) => {
+    const newParams = new URLSearchParams(searchParams);
+    
+    if (value) {
+      newParams.set('hideWithoutLink', 'true');
+    } else {
+      newParams.delete('hideWithoutLink');
+    }
+    
+    // Reset to page 1 when filters change
+    newParams.delete('page');
+    
+    setSearchParams(newParams);
+  };
+
   const handleAgentSearch = async (query: string) => {
     setAgentSearchLoading(true);
     try {
@@ -137,13 +153,19 @@ export function Datasets() {
 
   const activeFilterCount = 
     selectedFilters.modalities.length + 
-    selectedFilters.languages.length;
+    selectedFilters.languages.length +
+    (hideWithoutLink ? 1 : 0);
 
-  // Server-side filtering is already implemented, no client-side filtering needed
+  // Apply client-side filtering for datasets without links
   const filteredDatasets = useMemo(() => {
     if (!datasets || !Array.isArray(datasets)) return [];
+    
+    if (hideWithoutLink) {
+      return datasets.filter(dataset => dataset.homepage && dataset.homepage.length > 0);
+    }
+    
     return datasets;
-  }, [datasets]);
+  }, [datasets, hideWithoutLink]);
 
   const totalPages = Math.ceil(totalDatasets / datasetsPerPage);
   
@@ -195,7 +217,9 @@ export function Datasets() {
               <FilterSidebar
                 filters={datasetFilters}
                 selectedFilters={selectedFilters}
+                hideWithoutLink={hideWithoutLink}
                 onFilterChange={handleFilterChange}
+                onToggleHideWithoutLink={handleToggleHideWithoutLink}
               />
             </div>
           </aside>
@@ -211,7 +235,7 @@ export function Datasets() {
                 {/* Results header */}
                 <div className="mb-4 flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Showing {datasets.length} of {totalDatasets.toLocaleString()} datasets
+                    Showing {filteredDatasets.length} of {totalDatasets.toLocaleString()} datasets
                     {activeFilterCount > 0 && ` (${activeFilterCount} filters active)`}
                     {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
                   </p>

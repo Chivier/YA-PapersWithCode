@@ -11,7 +11,9 @@ interface FilterSidebarProps {
     modalities: string[];
     languages: string[];
   };
+  hideWithoutLink?: boolean;
   onFilterChange: (filterType: 'modalities' | 'languages', value: string) => void;
+  onToggleHideWithoutLink?: (value: boolean) => void;
 }
 
 interface FilterSectionProps {
@@ -78,14 +80,24 @@ function FilterSection({
   );
 }
 
-export function FilterSidebar({ filters, selectedFilters, onFilterChange }: FilterSidebarProps) {
+export function FilterSidebar({ 
+  filters, 
+  selectedFilters, 
+  hideWithoutLink = false, 
+  onFilterChange,
+  onToggleHideWithoutLink 
+}: FilterSidebarProps) {
   const hasActiveFilters = 
     selectedFilters.modalities.length > 0 ||
-    selectedFilters.languages.length > 0;
+    selectedFilters.languages.length > 0 ||
+    hideWithoutLink;
 
   const clearAllFilters = () => {
     selectedFilters.modalities.forEach(m => onFilterChange('modalities', m));
     selectedFilters.languages.forEach(l => onFilterChange('languages', l));
+    if (hideWithoutLink && onToggleHideWithoutLink) {
+      onToggleHideWithoutLink(false);
+    }
   };
 
   return (
@@ -116,6 +128,22 @@ export function FilterSidebar({ filters, selectedFilters, onFilterChange }: Filt
           selectedValues={selectedFilters.languages}
           onToggle={(value) => onFilterChange('languages', value)}
         />
+        
+        {/* Additional Options */}
+        <div className="border-b pb-4">
+          <h4 className="text-sm font-medium mb-3">Additional Options</h4>
+          <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              checked={hideWithoutLink}
+              onChange={(e) => onToggleHideWithoutLink?.(e.target.checked)}
+            />
+            <span className="flex items-center gap-1">
+              Hide datasets without official link
+            </span>
+          </label>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Download, FileText, Image } from 'lucide-react';
+import { FileText, Image, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 
 interface DatasetCardProps {
@@ -50,8 +51,14 @@ export function DatasetCard({ dataset, className }: DatasetCardProps) {
     }
   };
 
-  // Use the dataset ID directly for the URL
-  const datasetUrl = `/datasets/${dataset.id}`;
+  // Use the dataset ID directly for the URL, with safety check
+  const datasetUrl = dataset.id ? `/datasets/${dataset.id}` : '#';
+
+  // Don't render if no ID
+  if (!dataset.id) {
+    console.warn('Dataset without ID:', dataset);
+    return null;
+  }
 
   return (
     <Link to={datasetUrl} className="block">
@@ -113,16 +120,31 @@ export function DatasetCard({ dataset, className }: DatasetCardProps) {
               ) : null}
             </div>
 
-            {/* Stats */}
+            {/* Stats and Visit Button */}
             <div className="flex items-center justify-between text-sm text-muted-foreground pt-2">
-              <div className="flex items-center gap-1">
-                <FileText className="h-3 w-3" />
-                <span>{formatNumber(dataset.papers ?? 0)} papers</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Download className="h-3 w-3" />
-                <span>{formatNumber(dataset.downloads ?? 0)}</span>
-              </div>
+              {dataset.papers && dataset.papers > 0 ? (
+                <div className="flex items-center gap-1">
+                  <FileText className="h-3 w-3" />
+                  <span>{formatNumber(dataset.papers)} papers</span>
+                </div>
+              ) : (
+                <div />
+              )}
+              {dataset.homepage && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(dataset.homepage, '_blank', 'noopener,noreferrer');
+                  }}
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Visit Dataset
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -215,16 +215,16 @@ export function DatasetDetail() {
               )}
 
               {/* External Links */}
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ExternalLink className="h-5 w-5 text-primary" />
-                    External Resources
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {dataset.homepage && (
+              {dataset.homepage && (
+                <Card className="shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ExternalLink className="h-5 w-5 text-primary" />
+                      External Resources
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
                       <a 
                         href={dataset.homepage} 
                         target="_blank" 
@@ -238,24 +238,10 @@ export function DatasetDetail() {
                         </div>
                         <ExternalLink className="h-4 w-4 text-gray-400" />
                       </a>
-                    )}
-                    
-                    <a 
-                      href={`https://paperswithcode.com/dataset/${dataset.id}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors"
-                    >
-                      <Database className="h-5 w-5 text-purple-600" />
-                      <div className="flex-1">
-                        <p className="font-medium">View on Papers with Code</p>
-                        <p className="text-sm text-gray-500">Access benchmarks and leaderboards</p>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-gray-400" />
-                    </a>
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Related Paper */}
               {(dataset.paper_title || dataset.paper_url) && (
@@ -396,24 +382,16 @@ export function DatasetDetail() {
               </Card>
 
               {/* Usage Statistics (if available) */}
-              {(dataset.papers || dataset.downloads) && (
+              {dataset.papers && dataset.papers > 0 && (
                 <Card className="shadow-sm">
                   <CardHeader>
                     <CardTitle>Usage Statistics</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {dataset.papers && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Papers using dataset</span>
-                        <span className="font-semibold text-lg">{dataset.papers.toLocaleString()}</span>
-                      </div>
-                    )}
-                    {dataset.downloads && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Downloads</span>
-                        <span className="font-semibold text-lg">{dataset.downloads.toLocaleString()}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Papers using dataset</span>
+                      <span className="font-semibold text-lg">{dataset.papers.toLocaleString()}</span>
+                    </div>
                   </CardContent>
                 </Card>
               )}
