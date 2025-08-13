@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, Github } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
 
@@ -110,6 +110,15 @@ export function Header() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </form>
+            <a
+              href="https://github.com/chivier/YA-PapersWithCode"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-input bg-white hover:bg-gray-50 transition-colors"
+              title="View on GitHub"
+            >
+              <Github className="h-4 w-4 text-muted-foreground" />
+            </a>
           </div>
         </nav>
       </div>
