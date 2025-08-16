@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-Debug why SearchManager returns 0 results
+Debug why SearchManager returns 0 results.
 """
-import sys
-import os
 import asyncio
+import os
+import sys
 from pathlib import Path
+from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 os.environ['USE_MOCK_MODELS'] = 'false'
 
-async def test_manager():
+async def test_manager() -> None:
+    """Test SearchManager to debug result issues."""
     from agent_search.manager import SearchManager
     from agent_search.dataset_search import DatasetSearchAgent
     

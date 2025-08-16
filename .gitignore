@@ -39,9 +39,11 @@ archived_pages
 # Downloaded PapersWithCode data
 data/ya-paperswithcode-database/*.json
 *.json.gz
+download_log.json
 data/download_scripts/download_log.json
 data/ya-paperswithcode-database/*.db
 data/ya-paperswithcode-database/*.sqlite
+data/ya-paperswithcode-database/*_backup_*.db
 
 # Embeddings (pre-built vector indexes)
 data/ya-paperswithcode-database/embeddings/

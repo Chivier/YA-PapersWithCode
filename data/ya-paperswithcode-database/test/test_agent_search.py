@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """
-Test script for Agent Search functionality
+Test script for Agent Search functionality.
 """
-import sys
-import os
 import asyncio
+import importlib.util
+import os
+import sys
 from pathlib import Path
+from typing import Optional
 
 # Add the current directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Load .env file
-def load_env_file():
+def load_env_file() -> None:
+    """Load environment variables from .env file."""
     env_path = Path(__file__).parent.parent / '.env'
     if env_path.exists():
         print(f"Loading .env from: {env_path}")
@@ -26,8 +29,6 @@ def load_env_file():
 
 load_env_file()
 
-import importlib.util
-import sys
 
 # Import the manager module with dashes in the directory name
 spec = importlib.util.spec_from_file_location("manager", "agent-search/manager.py")
@@ -35,8 +36,8 @@ manager_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(manager_module)
 SearchManager = manager_module.SearchManager
 
-async def test_agent_search():
-    """Test the Agent Search functionality"""
+async def test_agent_search() -> None:
+    """Test the Agent Search functionality."""
     print("=" * 60)
     print("🧪 Testing Agent Search")
     print("=" * 60)

@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Test lazy loading of models
+Test lazy loading of models.
 """
+import gc
 import os
 import sys
+from typing import Optional
+
+import torch
+
 sys.path.insert(0, '.')
 
 # Set environment to use real models
@@ -11,11 +16,9 @@ os.environ['USE_MOCK_MODELS'] = 'false'
 os.environ['MODEL_PATH'] = 'checkpoints'
 
 from agent_search.model_manager import model_manager
-import torch
-import gc
 
-def print_gpu_memory():
-    """Print current GPU memory usage"""
+def print_gpu_memory() -> None:
+    """Print current GPU memory usage."""
     if torch.cuda.is_available():
         allocated = torch.cuda.memory_allocated() / 1024**3
         reserved = torch.cuda.memory_reserved() / 1024**3
@@ -23,7 +26,8 @@ def print_gpu_memory():
     else:
         print("GPU not available")
 
-def test_lazy_loading():
+def test_lazy_loading() -> None:
+    """Test lazy loading functionality for models."""
     print("=" * 60)
     print("Testing Lazy Model Loading")
     print("=" * 60)

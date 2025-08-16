@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-Test API endpoint and get detailed error information
+Test API endpoint and get detailed error information.
 """
-import requests
 import json
 import traceback
+from typing import Dict, Any, List
 
-def test_api_endpoint():
-    """Test the dataset search API endpoint"""
+import requests
+
+def test_api_endpoint() -> None:
+    """Test the dataset search API endpoint."""
     
     url = "http://localhost:8000/api/v1/datasets/search/agent"
     
@@ -40,7 +42,7 @@ def test_api_endpoint():
                 try:
                     error_data = response.json()
                     print(f"Error detail: {error_data.get('detail', 'No detail')}")
-                except:
+                except json.JSONDecodeError:
                     print("Could not parse error as JSON")
                     
         except requests.exceptions.RequestException as e:
@@ -50,14 +52,14 @@ def test_api_endpoint():
             print(f"Unexpected error: {e}")
             traceback.print_exc()
 
-def check_api_health():
-    """Check if API is running"""
+def check_api_health() -> bool:
+    """Check if API is running."""
     try:
         response = requests.get("http://localhost:8000/docs")
         if response.status_code == 200:
             print("✓ API server is running")
             return True
-    except:
+    except requests.RequestException:
         print("✗ API server is not responding")
         return False
     return False

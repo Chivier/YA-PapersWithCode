@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Final test script for API endpoints after all fixes
+Final test script for API endpoints after all fixes.
 """
-import requests
 import json
+from typing import Dict, Any
 
-def test_api():
-    """Test all API endpoints"""
+import requests
+
+def test_api() -> None:
+    """Test all API endpoints."""
     print("=" * 60)
     print("Final API Test - After All Fixes")
     print("=" * 60)
@@ -52,10 +54,10 @@ def test_api():
                 try:
                     error = response.json()
                     print(f"    {error.get('detail', 'Unknown error')}")
-                except:
+                except json.JSONDecodeError:
                     print(f"    {response.text[:200]}")
                     
-        except Exception as e:
+        except requests.RequestException as e:
             print(f"  ✗ Request failed: {e}")
     
     # Test paper search
@@ -87,7 +89,7 @@ def test_api():
             else:
                 print(f"  ✗ Error {response.status_code}")
                 
-        except Exception as e:
+        except requests.RequestException as e:
             print(f"  ✗ Request failed: {e}")
     
     print("\n" + "=" * 60)

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Comprehensive test suite for PapersWithCode API
-Tests all endpoints with various scenarios
+Comprehensive test suite for PapersWithCode API.
+Tests all endpoints with various scenarios.
 """
-
-import requests
 import json
 import time
-from typing import Dict, Any
 from datetime import datetime
+from typing import Dict, Any, Optional
+
+import requests
 
 # API Configuration
 BASE_URL = "http://localhost:8000"
@@ -22,15 +22,21 @@ class APITester:
         self.session = requests.Session()
         self.test_results = []
         
-    def log(self, message: str, level: str = "INFO"):
-        """Log test message with timestamp"""
+    def log(self, message: str, level: str = "INFO") -> None:
+        """Log test message with timestamp."""
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[{timestamp}] [{level}] {message}")
         
-    def test_endpoint(self, name: str, method: str, endpoint: str, 
-                     data: Dict[str, Any] = None, params: Dict[str, Any] = None,
-                     expected_status: int = 200):
-        """Test a single endpoint"""
+    def test_endpoint(
+        self,
+        name: str,
+        method: str,
+        endpoint: str,
+        data: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
+        expected_status: int = 200
+    ) -> Optional[requests.Response]:
+        """Test a single endpoint."""
         url = f"{self.base_url}{endpoint}"
         self.log(f"Testing {name}: {method} {url}")
         
@@ -54,7 +60,7 @@ class APITester:
             try:
                 response_data = response.json()
                 self.log(f"Response preview: {json.dumps(response_data, indent=2)[:500]}...")
-            except:
+            except json.JSONDecodeError:
                 self.log(f"Response: {response.text[:500]}...")
             
             self.test_results.append({
@@ -79,8 +85,8 @@ class APITester:
             })
             return None
     
-    def run_all_tests(self):
-        """Run all API tests"""
+    def run_all_tests(self) -> None:
+        """Run all API tests."""
         self.log("="*60)
         self.log("Starting PapersWithCode API Test Suite")
         self.log("="*60)
@@ -245,8 +251,8 @@ class APITester:
         
         self.print_summary()
     
-    def print_summary(self):
-        """Print test results summary"""
+    def print_summary(self) -> None:
+        """Print test results summary."""
         self.log("="*60)
         self.log("Test Results Summary")
         self.log("="*60)
@@ -275,8 +281,8 @@ class APITester:
         print(f"\nDetailed results saved to test_results.json")
 
 
-def main():
-    """Main test runner"""
+def main() -> None:
+    """Main test runner."""
     import argparse
     
     parser = argparse.ArgumentParser(description="Test PapersWithCode API")
@@ -292,7 +298,7 @@ def main():
     try:
         response = requests.get(f"{args.url}/")
         print(f"✅ Server is running at {args.url}")
-    except:
+    except requests.RequestException:
         print(f"❌ Server is not running at {args.url}")
         print("Please start the server with: python api_server.py")
         return

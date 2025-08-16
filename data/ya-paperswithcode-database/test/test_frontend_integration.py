@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Test script to verify frontend integration with fixed dataset IDs"""
+"""Test script to verify frontend integration with fixed dataset IDs."""
+import json
+from typing import Dict, Any, List, Tuple
 
 import requests
-import json
 
 BASE_URL = "http://localhost:8000"
 
-def test_dataset_search_with_ids():
-    """Test that dataset search returns proper IDs for frontend"""
+def test_dataset_search_with_ids() -> bool:
+    """Test that dataset search returns proper IDs for frontend."""
     print("=" * 60)
     print("Testing Dataset Search API - Frontend Integration")
     print("=" * 60)
@@ -78,8 +79,8 @@ def test_dataset_search_with_ids():
     
     return all_passed
 
-def test_dataset_detail_urls():
-    """Test that dataset detail URLs would work"""
+def test_dataset_detail_urls() -> bool:
+    """Test that dataset detail URLs would work."""
     print("\n" + "=" * 60)
     print("Testing Dataset Detail URL Formation")
     print("=" * 60)
@@ -123,8 +124,8 @@ def test_dataset_detail_urls():
         print(f"❌ Failed to fetch datasets: {response.status_code}")
         return False
 
-def main():
-    """Run all tests"""
+def main() -> None:
+    """Run all tests."""
     print("\n🚀 Frontend Integration Test Suite\n")
     
     # Check if server is running
@@ -133,7 +134,7 @@ def main():
         if response.status_code != 200:
             print("❌ API server is not responding properly")
             return
-    except:
+    except requests.RequestException:
         print("❌ Cannot connect to API server at", BASE_URL)
         print("   Please ensure the server is running")
         return

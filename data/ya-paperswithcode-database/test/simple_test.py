@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Simple test to check if models are loading
+Simple test to check if models are loading.
 """
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
-# Load .env file
-def load_env_file():
+def load_env_file() -> None:
+    """Load environment variables from .env file."""
     env_path = Path(__file__).parent.parent.parent / '.env'
     if env_path.exists():
         print(f"Loading .env from: {env_path}")
@@ -52,8 +53,8 @@ try:
             # Check for model files
             if Path(f"{crawler_path}/config.json").exists():
                 print("✓ Crawler config.json found")
-            if (Path(f"{crawler_path}/model.safetensors").exists() or 
-                list(Path(crawler_path).glob("model-*.safetensors"))):
+            if (Path(f"{crawler_path}/model.safetensors").exists() or
+                    list(Path(crawler_path).glob("model-*.safetensors"))):
                 print("✓ Crawler model files found")
         else:
             print("✗ Crawler model directory not found")

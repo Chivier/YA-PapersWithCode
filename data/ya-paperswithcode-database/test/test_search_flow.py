@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Test script to debug the search flow"""
-
+"""Test script to debug the search flow."""
 import asyncio
 import json
-import sys
 import os
+import sys
 from pathlib import Path
+from typing import Optional
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -13,8 +13,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from agent_search.manager import SearchManager
 from agent_search.dataset_search import DatasetSearchAgent
 
-async def test_dataset_search():
-    """Test dataset search functionality"""
+async def test_dataset_search() -> None:
+    """Test dataset search functionality."""
     print("=" * 60)
     print("Testing Dataset Search")
     print("=" * 60)
@@ -60,7 +60,10 @@ async def test_dataset_search():
             print(f"\nTotal datasets loaded: {len(all_datasets)}")
             
             # Check if any dataset contains 'mnist'
-            mnist_datasets = [d for d in all_datasets if 'mnist' in d.get('name', '').lower() or 'mnist' in d.get('description', '').lower()]
+            mnist_datasets = [
+                d for d in all_datasets
+                if 'mnist' in d.get('name', '').lower() or 'mnist' in d.get('description', '').lower()
+            ]
             print(f"Datasets containing 'mnist': {len(mnist_datasets)}")
             
             if mnist_datasets:
@@ -75,8 +78,8 @@ async def test_dataset_search():
         
     print("\n" + "=" * 60)
 
-async def test_manager_search():
-    """Test search through manager"""
+async def test_manager_search() -> None:
+    """Test search through manager."""
     print("\nTesting Search Manager")
     print("=" * 60)
     
@@ -111,8 +114,8 @@ async def test_manager_search():
         import traceback
         traceback.print_exc()
 
-async def test_semantic_search():
-    """Test semantic search functionality"""
+async def test_semantic_search() -> None:
+    """Test semantic search functionality."""
     print("\n" + "=" * 60)
     print("Testing Semantic Search")
     print("=" * 60)
@@ -146,8 +149,8 @@ async def test_semantic_search():
         import traceback
         traceback.print_exc()
 
-async def main():
-    """Run all tests"""
+async def main() -> None:
+    """Run all tests."""
     await test_dataset_search()
     await test_manager_search()
     await test_semantic_search()

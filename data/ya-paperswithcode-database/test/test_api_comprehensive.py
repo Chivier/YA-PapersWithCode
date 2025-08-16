@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Comprehensive API test script"""
-
-import requests
+"""Comprehensive API test script."""
 import json
 import time
+from typing import Dict, Any, List
+
+import requests
 
 BASE_URL = "http://localhost:8000"
 
-def test_agent_search():
-    """Test various agent search queries"""
+def test_agent_search() -> None:
+    """Test various agent search queries."""
     print("=" * 60)
     print("Testing Agent Search API")
     print("=" * 60)
@@ -53,8 +54,8 @@ def test_agent_search():
         
         time.sleep(0.5)  # Small delay between requests
 
-def test_regular_search():
-    """Test regular dataset search"""
+def test_regular_search() -> None:
+    """Test regular dataset search."""
     print("\n" + "=" * 60)
     print("Testing Regular Dataset Search API")
     print("=" * 60)
@@ -86,8 +87,8 @@ def test_regular_search():
     except Exception as e:
         print(f"✗ Request failed: {e}")
 
-def test_api_health():
-    """Test API health endpoints"""
+def test_api_health() -> bool:
+    """Test API health endpoints."""
     print("\n" + "=" * 60)
     print("Testing API Health")
     print("=" * 60)
@@ -115,8 +116,8 @@ def test_api_health():
         
     return True
 
-def main():
-    """Run all tests"""
+def main() -> None:
+    """Run all tests."""
     print("\n🚀 Starting Comprehensive API Tests\n")
     
     if not test_api_health():

@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """
-Test all API endpoints
+Test all API endpoints.
 """
-import requests
 import json
+from typing import Dict, Any, Optional
+
+import requests
 
 BASE_URL = "http://localhost:8000/api/v1"
 
-def test_endpoint(method, path, data=None, params=None):
-    """Test a single endpoint"""
+def test_endpoint(
+    method: str, 
+    path: str, 
+    data: Optional[Dict[str, Any]] = None, 
+    params: Optional[Dict[str, Any]] = None
+) -> Optional[Dict[str, Any]]:
+    """Test a single endpoint."""
     url = f"{BASE_URL}{path}"
     
     try:
@@ -24,14 +31,15 @@ def test_endpoint(method, path, data=None, params=None):
             "success": response.status_code == 200,
             "data": response.json() if response.status_code == 200 else response.text
         }
-    except Exception as e:
+    except requests.RequestException as e:
         return {
             "status": 0,
             "success": False,
             "data": str(e)
         }
 
-def main():
+def main() -> None:
+    """Run all endpoint tests."""
     print("Testing PapersWithCode API Endpoints")
     print("=" * 60)
     
@@ -108,7 +116,7 @@ def main():
                 try:
                     error_data = json.loads(result["data"])
                     print(f"  Error: {error_data.get('detail', 'Unknown error')}")
-                except:
+                except json.JSONDecodeError:
                     print(f"  Error: {result['data'][:200]}")
             else:
                 print(f"  Error: {result['data']}")

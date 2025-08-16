@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-Individual API endpoint test scripts
-Each function tests a specific endpoint in detail
+Individual API endpoint test scripts.
+Each function tests a specific endpoint in detail.
 """
+import json
+from typing import Dict, Any, List, Optional
 
 import requests
-import json
-from typing import Dict, Any, List
 
 BASE_URL = "http://localhost:8000/api/v1"
 
 
-def test_sqlite_search():
-    """Test SQLite search endpoint"""
+def test_sqlite_search() -> None:
+    """Test SQLite search endpoint."""
     print("\n" + "="*50)
     print("Testing SQLite Search Endpoint")
     print("="*50)
@@ -89,8 +89,8 @@ def test_sqlite_search():
             print(f"Exception: {str(e)}")
 
 
-def test_ai_search():
-    """Test AI agent search endpoint"""
+def test_ai_search() -> None:
+    """Test AI agent search endpoint."""
     print("\n" + "="*50)
     print("Testing AI Agent Search Endpoint")
     print("="*50)
@@ -148,8 +148,8 @@ def test_ai_search():
             print(f"Exception: {str(e)}")
 
 
-def test_import_export():
-    """Test data import and export endpoints"""
+def test_import_export() -> None:
+    """Test data import and export endpoints."""
     print("\n" + "="*50)
     print("Testing Import/Export Endpoints")
     print("="*50)
@@ -239,8 +239,8 @@ def test_import_export():
             print(f"Exception: {str(e)}")
 
 
-def test_resource_endpoints():
-    """Test resource endpoints (papers, repos, methods, datasets)"""
+def test_resource_endpoints() -> None:
+    """Test resource endpoints (papers, repos, methods, datasets)."""
     print("\n" + "="*50)
     print("Testing Resource Endpoints")
     print("="*50)
@@ -303,8 +303,8 @@ def test_resource_endpoints():
             print(f"Exception: {str(e)}")
 
 
-def test_statistics():
-    """Test statistics endpoint"""
+def test_statistics() -> None:
+    """Test statistics endpoint."""
     print("\n" + "="*50)
     print("Testing Statistics Endpoint")
     print("="*50)
@@ -340,8 +340,8 @@ def test_statistics():
         print(f"Exception: {str(e)}")
 
 
-def test_error_handling():
-    """Test API error handling"""
+def test_error_handling() -> None:
+    """Test API error handling."""
     print("\n" + "="*50)
     print("Testing Error Handling")
     print("="*50)
@@ -405,15 +405,15 @@ def test_error_handling():
             print(f"Exception: {str(e)}")
 
 
-def main():
-    """Run individual tests"""
+def main() -> None:
+    """Run individual tests."""
     import sys
     
     # Check if server is running
     try:
         response = requests.get(f"http://localhost:8000/")
         print("✅ Server is running")
-    except:
+    except requests.RequestException:
         print("❌ Server is not running. Please start with: python api_server.py")
         sys.exit(1)
     
