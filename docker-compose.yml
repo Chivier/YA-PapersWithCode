@@ -1,82 +1,54 @@
 version: '3.8'
 
 services:
-  # Backend API Service
   backend:
     build:
       context: ./data/ya-paperswithcode-database
       dockerfile: Dockerfile
     container_name: ya-pwc-backend
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      # Override for container networking
-      - BACKEND_HOST=0.0.0.0
-      - BACKEND_PORT=8000
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "8000:8000"
     volumes:
       # Mount database and data files
-      - ./data/ya-paperswithcode-database:/app
-      - ./data/ya-paperswithcode-database/paperswithcode.db:/app/paperswithcode.db
-      - ./data/ya-paperswithcode-database/embeddings:/app/embeddings
-      - ./data/ya-paperswithcode-database/exports:/app/exports
-      # Logs volume
+      - ./data/ya-paperswithcode-database:/app:ro
+      - backend-data:/app/data
       - backend-logs:/app/logs
+      - backend-embeddings:/app/embeddings
+      - backend-exports:/app/exports
+    environment:
+      - PYTHONPATH=/app
+      - DB_PATH=/app/paperswithcode.db
     networks:
-      - ya-pwc-network
+      - ya-paperswithcode-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    depends_on:
-      - redis
 
-  # Frontend Service
   frontend:
     build:
       context: ./frontend/ya-paperswithcode
       dockerfile: Dockerfile
     container_name: ya-pwc-frontend
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=production
-      - VITE_API_URL=${BACKEND_URL:-http://localhost:8000}/api/v1
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-    volumes:
-      - ./frontend/ya-paperswithcode:/app
-      - /app/node_modules
-      - /app/dist
-    networks:
-      - ya-pwc-network
+      - "3000:80"
     depends_on:
       - backend
-
-  # Redis Cache Service (Optional but recommended)
-  redis:
-    image: redis:7-alpine
-    container_name: ya-pwc-redis
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
     networks:
-      - ya-pwc-network
-    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
-
-volumes:
-  redis-data:
-    driver: local
-  backend-logs:
-    driver: local
+      - ya-paperswithcode-network
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://backend:8000/api/v1
 
 networks:
-  ya-pwc-network:
+  ya-paperswithcode-network:
     driver: bridge
+
+volumes:
+  backend-data:
+  backend-logs:
+  backend-embeddings:
+  backend-exports:

@@ -1,33 +1,26 @@
-# Backend Dockerfile for YA-PapersWithCode
-FROM python:3.10-slim
+# Backend Dockerfile for FastAPI server
+FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
+    sqlite3 \
     curl \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Copy requirements first for better layer caching
 COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application files
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p /app/logs /app/data /app/embeddings /app/exports
-
-# Download data if not present (optional, can be mounted)
-RUN if [ ! -f /app/data/paperswithcode.db ]; then \
-    echo "Database will be initialized on first run"; \
-    fi
+# Create data directory and set permissions
+RUN mkdir -p /app/data /app/logs /app/embeddings /app/exports && \
+    chmod 755 /app/data /app/logs /app/embeddings /app/exports
 
 # Expose port
 EXPOSE 8000
@@ -36,5 +29,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "api_server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# Run the FastAPI server
+CMD ["python", "api_server.py"]
